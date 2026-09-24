@@ -331,7 +331,7 @@ async function main() {
       'Both no-fault controls passed. Scripted example; no model calls.',
     );
     console.log(
-      `Open before.json and after.json from ${directory} in a project at https://tracedojo.com (sign-in required), using Workflows → Preview report. Preview does not save reports.\nLocal dashboard and upload instructions: https://github.com/syedarman1/TraceDojo/blob/main/docs/WORKFLOWS.md#inspect-and-save-reports`,
+      `Open before.json and after.json from ${directory} in a project at https://tracedojo.com (sign-in required), using Workflows → Preview report. Preview does not save reports.\nLocal dashboard and upload instructions: https://tracedojo.com/docs#inspect-and-save-reports`,
     );
     return;
   }

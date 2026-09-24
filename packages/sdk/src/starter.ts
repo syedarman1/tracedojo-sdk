@@ -27,7 +27,7 @@ export async function createStarter(
       '\n## First CI run\n\nThe generated push filter uses `main`. Change it in `.github/workflows/tracedojo.yml` if your default branch differs. The first adoption PR can report an incomplete comparison because no baseline exists yet. Merge the generated workflows and comment script to the default branch, then verify its baseline run succeeds before requiring `agent-checks` in branch protection. Subsequent PRs need a report for their exact base commit; rerun that base workflow if its artifact is missing or expired.\n';
   }
   files['README.md'] +=
-    '\n## View your reports\n\nAt https://tracedojo.com, sign in, create a project, and open Workflows → Preview report to inspect JSON in your browser. Preview does not save it. To save reports, create an upload token in project settings and follow the upload instructions in https://github.com/syedarman1/TraceDojo/blob/main/docs/WORKFLOWS.md#inspect-and-save-reports. That guide also covers running the dashboard locally without an account. Never commit upload tokens or private reports.\n';
+    '\n## View your reports\n\nAt https://tracedojo.com, sign in, create a project, and open Workflows → Preview report to inspect JSON in your browser. Preview does not save it. To save reports, create an upload token in project settings and follow the upload instructions in https://tracedojo.com/docs#inspect-and-save-reports. Never commit upload tokens or private reports.\n';
   if (virtualTime) {
     const workflow = JSON.parse(files['workflow.json']!);
     workflow.clock = { mode: 'virtual', startMs: 0, maxTimeMs: 60000 };

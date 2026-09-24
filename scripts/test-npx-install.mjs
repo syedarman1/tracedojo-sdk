@@ -159,6 +159,9 @@ try {
     await readFile(join(project, 'dojo/LICENSE'), 'utf8'),
     /Apache License/,
   );
+  const starterReadme = await readFile(join(project, 'dojo/README.md'), 'utf8');
+  assert.match(starterReadme, /https:\/\/tracedojo\.com\/docs/);
+  assert.doesNotMatch(starterReadme, /github\.com\/syedarman1\/TraceDojo/);
   assert.ok(requests.has('tracedojo') && requests.has('@tracedojo/sdk'));
   assert.ok(requests.has('launcher.tgz') && requests.has('sdk.tgz'));
   await run(
@@ -307,12 +310,14 @@ try {
     project,
     env,
   );
-  await run(
+  const demoOutput = await run(
     'npx',
     ['--yes', 'tracedojo', 'demo', '--out', 'demo-evidence'],
     project,
     env,
   );
+  assert.match(demoOutput, /https:\/\/tracedojo\.com\/docs/);
+  assert.doesNotMatch(demoOutput, /github\.com\/syedarman1\/TraceDojo/);
   const beforeText = await readFile(
     join(project, 'demo-evidence/before.json'),
     'utf8',
