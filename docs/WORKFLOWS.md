@@ -495,6 +495,19 @@ security attestation of untrusted PR code.
   `.github/workflows/tracedojo.yml` already exists. Existing files are preserved.
 - **Test exits 2:** check paths, JSON, dependency installation, and adapter exports.
   Raw loader/schema details are suppressed to avoid leaking inputs.
+- **Exit code 3:** the test is incomplete or the comparison is incomparable.
+  Inspect the saved report for an untriggered fault, stopped run, missing trials,
+  or mismatched task, checks, initial state, or fault schedule. Do not treat it
+  as a passing check. Exit 1 means an observed failure or regression; exit 0
+  means the command's checks passed, not a guarantee of production reliability.
+- **Adapter import errors:** run from the repository containing your installed
+  dependencies, check the adapter path, and ensure its exports match the adapter
+  contract above. Use Node 22.23.1 or newer. Review trusted adapter code locally;
+  avoid posting credentials or private traces when requesting support.
+- **`--out` already exists:** choose a fresh report filename and, when used, a
+  fresh `--summary` filename. TraceDojo opens output files exclusively and does
+  not overwrite previous evidence. Archive the previous run instead of deleting
+  it just to make the command pass.
 - **Control fails:** fix ordinary execution before interpreting resilience. No
   fault trials run until the control passes.
 - **Fault not reached:** target a tool and occurrence the agent actually calls;
