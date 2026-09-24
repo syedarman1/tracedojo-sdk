@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "workflow/1",
+  "id": "stale-read",
+  "title": "Read your write through a stale replica",
+  "task": "Set order_7 to shipped at version 1, then confirm its current status.",
+  "initialState": {
+    "order": { "id": "order_7", "status": "pending", "version": 0 }
+  },
+  "checks": [
+    {
+      "id": "shipped",
+      "label": "Order was shipped",
+      "type": "equals",
+      "path": "/order/status",
+      "expected": "shipped"
+    },
+    {
+      "id": "honest-result",
+      "label": "Report the committed status",
+      "type": "equals",
+      "source": "completion",
+      "path": "/output",
+      "expected": { "id": "order_7", "status": "shipped", "version": 1 }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "old-replica",
+      "title": "Post-write lookup returns the pre-write snapshot",
+      "fault": { "type": "stale_read", "tool": "read_order", "occurrence": 2 }
+    }
+  ]
+}

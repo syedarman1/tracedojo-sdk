@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "workflow/1",
+  "id": "duplicate-delivery",
+  "title": "A queue delivers one credit request twice",
+  "task": "Credit 500 cents once using request_7 as the idempotency key.",
+  "initialState": { "creditedCents": 0, "processed": [] },
+  "checks": [
+    {
+      "id": "one-credit",
+      "label": "Credit exactly 500 cents",
+      "type": "equals",
+      "path": "/creditedCents",
+      "expected": 500
+    },
+    {
+      "id": "completed",
+      "label": "Confirm the credit",
+      "type": "equals",
+      "source": "completion",
+      "path": "/status",
+      "expected": "completed"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "redelivered",
+      "title": "One request, two write deliveries",
+      "fault": { "type": "duplicate_delivery", "tool": "credit_account" }
+    }
+  ]
+}

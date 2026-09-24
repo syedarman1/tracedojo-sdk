@@ -1,0 +1,86 @@
+{
+  "name": "@tracedojo/sdk",
+  "version": "0.1.1",
+  "description": "Controlled tool failures and state assertions for AI agents",
+  "license": "Apache-2.0",
+  "author": "Syed Arman",
+  "homepage": "https://tracedojo.com/docs",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "type": "module",
+  "files": [
+    "dist",
+    "templates",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "exports": {
+    "./trends": {
+      "types": "./dist/trends.d.ts",
+      "default": "./dist/trends.js"
+    },
+    "./matrix": {
+      "types": "./dist/matrix.d.ts",
+      "default": "./dist/matrix.js"
+    },
+    "./compare": {
+      "types": "./dist/compare.d.ts",
+      "default": "./dist/compare.js"
+    },
+    "./cli": "./dist/cli.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "default": "./dist/schema.js"
+    },
+    "./langsmith": {
+      "types": "./dist/langsmith.d.ts",
+      "default": "./dist/langsmith.js"
+    },
+    "./langchain": {
+      "types": "./dist/langchain.d.ts",
+      "default": "./dist/langchain.js"
+    },
+    "./privacy": {
+      "types": "./dist/privacy.d.ts",
+      "default": "./dist/privacy.js"
+    },
+    "./reports": {
+      "types": "./dist/reports.d.ts",
+      "default": "./dist/reports.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.23.1"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "zod": "4.6.2"
+  },
+  "bin": {
+    "tracedojo": "dist/cli.js"
+  },
+  "peerDependencies": {
+    "@langchain/core": "^1.2.11"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "ai-agents",
+    "llm-testing",
+    "chaos-engineering",
+    "prompt-injection",
+    "regression-testing"
+  ]
+}
