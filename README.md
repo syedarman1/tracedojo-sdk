@@ -94,3 +94,9 @@ proprietary and is not included in this package.
 · [Security](https://tracedojo.com/docs/security)
 · [Limitations](https://tracedojo.com/docs/limitations)
 · [Dashboard](https://tracedojo.com)
+
+## Developing the SDK
+
+Use Node 22.23.1. Run `npm ci`, `npm test`, `npm run test:sdk-install`, and `npm run test:npx-install`. The tests use synthetic fixtures and do not require model API keys.
+
+This repository contains the Apache-2.0 SDK, launcher, selected SDK tests, documentation, and release tooling. The hosted dashboard, database, billing, branding, and private-agent examples are maintained separately and are not included.

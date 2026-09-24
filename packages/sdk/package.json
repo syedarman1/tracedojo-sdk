@@ -82,5 +82,11 @@
     "chaos-engineering",
     "prompt-injection",
     "regression-testing"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/syedarman1/tracedojo-sdk.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": "https://github.com/syedarman1/tracedojo-sdk/issues"
 }

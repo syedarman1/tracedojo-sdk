@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Syed Arman -->
+
 # Test your agent with TraceDojo
 
 TraceDojo runs your agent against tools you simulate. It injects a controlled
