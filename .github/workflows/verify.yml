@@ -22,3 +22,10 @@ jobs:
       - run: npm test
       - run: npm run test:sdk-install
       - run: npm run test:npx-install
+      - name: Smoke-test composite action
+        uses: ./
+        with:
+          config: packages/sdk/templates/workflow.json
+          adapter: packages/sdk/templates/adapter.mjs
+          report: .tracedojo/action-smoke.json
+          trials: "1"

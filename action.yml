@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Syed Arman
+name: TraceDojo agent test
+description: Run a local agent against controlled tool failures and independent state checks.
+branding:
+  icon: shield
+  color: gray-dark
+inputs:
+  config:
+    description: Workflow JSON path relative to the checked-out repository
+    default: dojo/workflow.json
+  adapter:
+    description: Trusted local agent adapter path
+    default: dojo/adapter.mjs
+  trials:
+    description: Independent trials per fault, from 1 to 20
+    default: "3"
+  report:
+    description: New report output path; existing files are never overwritten
+    default: .tracedojo/action-report.json
+outputs:
+  report:
+    description: Absolute path of the requested report (may be absent after setup failure)
+    value: ${{ steps.test.outputs.report }}
+runs:
+  using: composite
+  steps:
+    - id: test
+      shell: bash
+      env:
+        TD_ACTION_PATH: ${{ github.action_path }}
+        TD_CONFIG: ${{ inputs.config }}
+        TD_ADAPTER: ${{ inputs.adapter }}
+        TD_TRIALS: ${{ inputs.trials }}
+        TD_REPORT: ${{ inputs.report }}
+      run: node "$TD_ACTION_PATH/scripts/github-action.mjs"

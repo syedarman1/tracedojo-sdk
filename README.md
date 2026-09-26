@@ -100,3 +100,40 @@ proprietary and is not included in this package.
 Use Node 22.23.1. Run `npm ci`, `npm test`, `npm run test:sdk-install`, and `npm run test:npx-install`. The tests use synthetic fixtures and do not require model API keys.
 
 This repository contains the Apache-2.0 SDK, launcher, selected SDK tests, documentation, and release tooling. The hosted dashboard, database, billing, branding, and private-agent examples are maintained separately and are not included.
+
+## GitHub Action
+
+The root `action.yml` packages the test command for an existing workflow.
+Install your locked dependencies first; the action does not install packages,
+request permissions, upload reports, or contact the hosted dashboard. Pin the
+action to a reviewed full commit SHA. This action is available from this public
+repository; a GitHub Marketplace listing has not been published.
+
+```yaml
+permissions:
+  contents: read
+steps:
+  - uses: actions/checkout@v4
+    with:
+      persist-credentials: false
+  - uses: actions/setup-node@v4
+    with:
+      node-version: '22.23.1'
+  - run: npm ci
+  - uses: syedarman1/tracedojo-sdk@REVIEWED_FULL_COMMIT_SHA
+    with:
+      config: dojo/workflow.json
+      adapter: dojo/adapter.mjs
+      trials: '3'
+      report: .tracedojo/pr-report.json
+```
+
+Add `@tracedojo/sdk` as an exact dev dependency and commit your lockfile. Adapter
+code executes with the runner's permissions; never expose provider credentials
+to untrusted pull requests. Model-backed adapters may incur provider charges.
+Failed assertions exit 1; invalid setup exits 2; incomplete evidence exits 3.
+Reports survive a failed test on the runner, but uploading them as Actions
+artifacts is your explicit choice. Review traces before sharing them.
+
+For exact-base regression gating and sticky PR comments, use `init --ci` instead;
+this small action runs one suite and does not fetch or compare baseline evidence.
