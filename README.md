@@ -110,7 +110,9 @@ Install your locked dependencies first; the action does not install packages,
 request permissions, upload reports, or contact the hosted dashboard. Pin the
 action to a reviewed full commit SHA. Version 1.0.0 is available on
 [GitHub Marketplace](https://github.com/marketplace/actions/tracedojo-agent-test). The root `action.yml`
-in this SDK repository remains available for existing callers.
+in this SDK repository remains as a compatibility wrapper for existing callers.
+It forwards inputs and the report output to the pinned Action release; the
+implementation and its tests are maintained only in `tracedojo-action`.
 
 ```yaml
 permissions:

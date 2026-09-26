@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Syed Arman
-name: TraceDojo agent test
-description: Run a local agent against controlled tool failures and independent state checks.
+name: TraceDojo agent test compatibility wrapper
+description: Forward existing SDK action references to the pinned TraceDojo Action release.
 branding:
   icon: shield
   color: gray-dark
@@ -26,11 +26,10 @@ runs:
   using: composite
   steps:
     - id: test
-      shell: bash
-      env:
-        TD_ACTION_PATH: ${{ github.action_path }}
-        TD_CONFIG: ${{ inputs.config }}
-        TD_ADAPTER: ${{ inputs.adapter }}
-        TD_TRIALS: ${{ inputs.trials }}
-        TD_REPORT: ${{ inputs.report }}
-      run: node "$TD_ACTION_PATH/scripts/github-action.mjs"
+      # TraceDojo Action v1.0.0; upgrade this reviewed pin to adopt action fixes.
+      uses: syedarman1/tracedojo-action@839a83c3dcfa490884a2c1092d301f8fed2148bb
+      with:
+        config: ${{ inputs.config }}
+        adapter: ${{ inputs.adapter }}
+        trials: ${{ inputs.trials }}
+        report: ${{ inputs.report }}
