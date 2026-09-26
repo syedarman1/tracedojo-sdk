@@ -491,15 +491,12 @@ security attestation of untrusted PR code.
 
 ## Troubleshooting
 
+### Setup and output files
+
 - **Init cannot create files:** choose a new starter directory and check whether
   `.github/workflows/tracedojo.yml` already exists. Existing files are preserved.
 - **Test exits 2:** check paths, JSON, dependency installation, and adapter exports.
   Raw loader/schema details are suppressed to avoid leaking inputs.
-- **Exit code 3:** the test is incomplete or the comparison is incomparable.
-  Inspect the saved report for an untriggered fault, stopped run, missing trials,
-  or mismatched task, checks, initial state, or fault schedule. Do not treat it
-  as a passing check. Exit 1 means an observed failure or regression; exit 0
-  means the command's checks passed, not a guarantee of production reliability.
 - **Adapter import errors:** run from the repository containing your installed
   dependencies, check the adapter path, and ensure its exports match the adapter
   contract above. Use Node 22.23.1 or newer. Review trusted adapter code locally;
@@ -508,14 +505,25 @@ security attestation of untrusted PR code.
   fresh `--summary` filename. TraceDojo opens output files exclusively and does
   not overwrite previous evidence. Archive the previous run instead of deleting
   it just to make the command pass.
-- **Control fails:** fix ordinary execution before interpreting resilience. No
-  fault trials run until the control passes.
-- **Fault not reached:** target a tool and occurrence the agent actually calls;
-  skipped faults do not establish recovery.
 - **CI cannot install the SDK:** commit `package.json` and `package-lock.json`
   with the pinned published SDK dependency. If using the optional local archive
   installation, commit that archive too. Avoid local directory links. Validate
   with `npm ci` in a fresh checkout.
+
+### Incomplete or failed runs
+
+- **Exit code 3:** the test is incomplete or the comparison is incomparable.
+  Inspect the saved report for an untriggered fault, stopped run, missing trials,
+  or mismatched task, checks, initial state, or fault schedule. Do not treat it
+  as a passing check. Exit 1 means an observed failure or regression; exit 0
+  means the command's checks passed, not a guarantee of production reliability.
+- **Control fails:** fix ordinary execution before interpreting resilience. No
+  fault trials run until the control passes.
+- **Fault not reached:** target a tool and occurrence the agent actually calls;
+  skipped faults do not establish recovery.
+
+### Saving and comparing evidence
+
 - **Hosted preview disappears:** upload with a project token to save the report.
 - **Report too large:** imports/uploads accept at most 5 MB per payload. Reduce
   fixture/trace size or trial count. CLI upload chunks batches into bounded groups.
