@@ -103,11 +103,14 @@ This repository contains the Apache-2.0 SDK, launcher, selected SDK tests, docum
 
 ## GitHub Action
 
-The root `action.yml` packages the test command for an existing workflow.
+The [TraceDojo Action](https://github.com/syedarman1/tracedojo-action) packages
+the test command for an existing workflow. Its dedicated repository contains
+the action, documentation, and tests against the published SDK.
 Install your locked dependencies first; the action does not install packages,
 request permissions, upload reports, or contact the hosted dashboard. Pin the
-action to a reviewed full commit SHA. This action is available from this public
-repository; a GitHub Marketplace listing has not been published.
+action to a reviewed full commit SHA. The action is available now by commit;
+the GitHub Marketplace release is pending publication. The root `action.yml`
+in this SDK repository remains available for existing callers.
 
 ```yaml
 permissions:
@@ -120,7 +123,7 @@ steps:
     with:
       node-version: '22.23.1'
   - run: npm ci
-  - uses: syedarman1/tracedojo-sdk@REVIEWED_FULL_COMMIT_SHA
+  - uses: syedarman1/tracedojo-action@839a83c3dcfa490884a2c1092d301f8fed2148bb
     with:
       config: dojo/workflow.json
       adapter: dojo/adapter.mjs
