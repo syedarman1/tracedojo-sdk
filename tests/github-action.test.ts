@@ -12,6 +12,32 @@ import {
 } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import {
+  assertSupportedNode,
+  ActionSetupError,
+} from "../scripts/action-runtime.mjs";
+
+test("action accepts the SDK Node minimum and newer major versions", () => {
+  for (const version of ["22.23.1", "22.23.2", "22.24.0", "23.0.0", "24.0.0"]) {
+    assert.doesNotThrow(() => assertSupportedNode(version), version);
+  }
+  for (const version of [
+    "18.20.8",
+    "20.99.0",
+    "22.5.1",
+    "22.23.0",
+    "invalid",
+  ]) {
+    assert.throws(
+      () => assertSupportedNode(version),
+      (error: unknown) => {
+        assert.ok(error instanceof ActionSetupError);
+        assert.match(error.message, /Use Node 22\.23\.1 or later/);
+        return true;
+      },
+    );
+  }
+});
 
 test("action preserves failure/incomplete exits and treats shell-looking paths as data", () => {
   mkdirSync(".tracedojo", { recursive: true });
@@ -42,10 +68,16 @@ test("action preserves failure/incomplete exits and treats shell-looking paths a
     assert.equal(run(safe).status, 0);
     assert.ok(existsSync(safe));
     assert.equal(run(safe).status, 2, "must not overwrite evidence");
-    assert.equal(
-      run(join(dir, "invalid.json"), { TD_TRIALS: "1; exit 0" }).status,
-      2,
+    const invalid = run(join(dir, "invalid.json"), { TD_TRIALS: "1; exit 0" });
+    assert.equal(invalid.status, 2);
+    assert.match(
+      invalid.stderr,
+      /TraceDojo setup failed\. Trials must be 1–20\./,
     );
+    assert.doesNotMatch(invalid.stderr, /1; exit 0/);
+    const outside = run("../outside.json");
+    assert.equal(outside.status, 2);
+    assert.match(outside.stderr, /Use paths inside the checkout/);
     writeFileSync(
       adapter,
       original.replace(
