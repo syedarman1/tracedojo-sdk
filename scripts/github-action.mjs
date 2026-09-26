@@ -2,7 +2,7 @@
 // Copyright 2026 Syed Arman
 import { createRequire } from "node:module";
 import { appendFileSync } from "node:fs";
-import { dirname, resolve, relative } from "node:path";
+import { dirname, resolve, relative, sep } from "node:path";
 import { spawnSync, execFileSync } from "node:child_process";
 
 try {
@@ -11,7 +11,7 @@ try {
     if (!value || /[\r\n\0]/.test(value)) throw Error("Invalid path input.");
     const absolute = resolve(root, value);
     const rel = relative(root, absolute);
-    if (rel === ".." || rel.startsWith("../"))
+    if (rel === ".." || rel.startsWith(`..${sep}`))
       throw Error("Use paths inside the checkout.");
     return absolute;
   };
@@ -21,8 +21,8 @@ try {
   const trials = process.env.TD_TRIALS;
   if (!/^(?:[1-9]|1[0-9]|20)$/.test(trials ?? ""))
     throw Error("Trials must be 1–20.");
-  const major = Number(process.versions.node.split(".")[0]);
-  if (major !== 22 || Number(process.versions.node.split(".")[1]) < 23)
+  const [major, minor, patch] = process.versions.node.split(".").map(Number);
+  if (major !== 22 || minor < 23 || (minor === 23 && patch < 1))
     throw Error("Use Node 22.23.1 or newer in the Node 22 series.");
   const require = createRequire(resolve(root, "package.json"));
   const cli = resolve(dirname(require.resolve("@tracedojo/sdk")), "cli.js");
