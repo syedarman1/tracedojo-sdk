@@ -108,6 +108,27 @@ export const checkSchema = z.discriminatedUnion('type', [
     type: z.literal('forbidden_tool'),
     tool: name,
   }),
+  z
+    .strictObject({
+      id: name,
+      label: text,
+      type: z.literal('tool_calls'),
+      tool: name,
+      min: z.number().int().min(0).max(1000).optional(),
+      max: z.number().int().min(0).max(1000).optional(),
+    })
+    .refine(
+      (c) =>
+        (c.min !== undefined || c.max !== undefined) &&
+        (c.min === undefined || c.max === undefined || c.min <= c.max),
+      'Set min, max, or both, with min no greater than max.',
+    ),
+  z.strictObject({
+    id: name,
+    label: text,
+    type: z.literal('tool_order'),
+    tools: z.array(name).min(2).max(20),
+  }),
   z.strictObject({
     id: name,
     label: text,
@@ -275,6 +296,59 @@ export function evaluateChecks(
         actual: attempts.length,
         expected: 0,
         evidenceIds: attempts.map((event) => event.id),
+      };
+    }
+    if (check.type === 'tool_calls') {
+      const calls = events.filter(
+        (event) => event.kind === 'tool_call' && event.tool === check.tool,
+      );
+      const n = calls.length;
+      const passed =
+        (check.min === undefined || n >= check.min) &&
+        (check.max === undefined || n <= check.max);
+      const range =
+        check.min === undefined
+          ? `at most ${check.max}`
+          : check.max === undefined
+            ? `at least ${check.min}`
+            : check.min === check.max
+              ? `exactly ${check.min}`
+              : `between ${check.min} and ${check.max}`;
+      return {
+        id: check.id,
+        label: check.label,
+        passed,
+        detail: `The agent called ${check.tool} ${n} time${n === 1 ? '' : 's'}; expected ${range}.`,
+        actual: n,
+        expected: {
+          ...(check.min !== undefined ? { min: check.min } : {}),
+          ...(check.max !== undefined ? { max: check.max } : {}),
+        },
+        evidenceIds: calls.map((event) => event.id),
+      };
+    }
+    if (check.type === 'tool_order') {
+      const calls = events.filter((event) => event.kind === 'tool_call');
+      const matched: WorkflowEvent[] = [];
+      for (const event of calls)
+        if (
+          matched.length < check.tools.length &&
+          event.tool === check.tools[matched.length]
+        )
+          matched.push(event);
+      const passed = matched.length === check.tools.length;
+      return {
+        id: check.id,
+        label: check.label,
+        passed,
+        detail: passed
+          ? 'The agent called these tools in the expected order.'
+          : `No ${check.tools[matched.length]} call followed ${
+              matched.length ? check.tools[matched.length - 1] : 'the start'
+            } in the expected order.`,
+        actual: calls.map((event) => event.tool ?? null),
+        expected: check.tools,
+        evidenceIds: matched.map((event) => event.id),
       };
     }
     const prior = at(initial, check.path);
