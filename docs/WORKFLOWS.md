@@ -323,11 +323,21 @@ selects the whole state. Escape `~` as `~0` and `/` as `~1` in field names.
 | `count`     | `{"id":"one","label":"One booking","type":"count","path":"/bookings","expected":1}`                                 | Exactly one array entry     |
 | `equals`    | `{"id":"owner","label":"Correct customer","type":"equals","path":"/bookings/0/customerId","expected":"customer_7"}` | Exact JSON value            |
 | `unchanged` | `{"id":"other","label":"Other customer unchanged","type":"unchanged","path":"/otherCustomer"}`                      | Same value before and after |
+| `tool_calls` | `{"id":"retries","label":"At most two attempts","type":"tool_calls","tool":"reserve_slot","max":2}` | Agent call count within `min`/`max` |
+| `tool_order` | `{"id":"verify","label":"Verify after booking","type":"tool_order","tools":["reserve_slot","list_bookings"]}` | These calls happen in this order |
 
 An equality check can use `"source":"completion"` to inspect the agent's stated
 result. Scenario-specific `checks` replace the workflow's default checks; the
 permission-revoked example expects no write and a truthful blocked completion.
-Missing paths fail checks. Tool ordering and arbitrary predicates are not supported.
+Missing paths fail checks.
+
+`tool_calls` and `tool_order` inspect the agent's recorded tool requests, including
+rejected and unknown calls. A duplicated delivery is still one request.
+`tool_calls` needs `min`, `max`, or both. `tool_order` passes when the listed
+tools appear in that order; other calls may occur between them. Because a failed
+control stops fault trials, put retry-shape expectations in scenario-specific
+`checks` when the no-fault path should not satisfy them. Arbitrary predicates are
+not supported.
 
 ## Run checks on pull requests
 
