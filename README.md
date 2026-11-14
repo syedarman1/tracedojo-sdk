@@ -141,6 +141,16 @@ reviewed commit. It runs one suite and does not compare baselines; use
 runner's permissions, so never expose provider credentials to untrusted pull
 requests.
 
+The two setups decide pass and fail differently:
+
+- **The Action** fails the job when the suite exits non-zero, so any failed check
+  or incomplete evidence fails it.
+- **The `init --ci` workflow** is a regression gate. On a pull request it fails
+  only when the head commit does worse than the exact base commit's saved report.
+  A PR that fails the same checks as its base still passes. Until a push to the
+  base branch has saved that report, PRs fail as incomplete, so merge the
+  workflow first. Pushes to the base branch fail on any failed check.
+
 ## Developing the SDK
 
 Node 22.23.1 or later; CI tests Node 22.23.1 and 24.
