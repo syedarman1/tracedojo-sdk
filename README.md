@@ -18,7 +18,7 @@ actually changed in your application's state, not what the agent claimed.
 No API key, no account. Node.js 22.23.1 or later.
 
 ```sh
-npx tracedojo@0.1.1 demo
+npx tracedojo@0.1.2 demo
 ```
 
 ```text
@@ -79,7 +79,7 @@ inconclusive, not as passes.
 Then:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.1.2
+npm install --save-dev --save-exact @tracedojo/sdk@0.1.3
 npx tracedojo init            # starter adapter + workflow
 npx tracedojo test --trials 3
 ```
@@ -140,6 +140,16 @@ reviewed commit. It runs one suite and does not compare baselines; use
 `init --ci` for regression gating and PR comments. Adapter code runs with the
 runner's permissions, so never expose provider credentials to untrusted pull
 requests.
+
+The two setups decide pass and fail differently:
+
+- **The Action** fails the job when the suite exits non-zero, so any failed check
+  or incomplete evidence fails it.
+- **The `init --ci` workflow** is a regression gate. On a pull request it fails
+  only when the head commit does worse than the exact base commit's saved report.
+  A PR that fails the same checks as its base still passes. Until a push to the
+  base branch has saved that report, PRs fail as incomplete, so merge the
+  workflow first. Pushes to the base branch fail on any failed check.
 
 ## Developing the SDK
 

@@ -16,7 +16,7 @@ import {
 } from './schema.js';
 import { sanitizeWorkflowBatch } from './privacy.js';
 import { importLangSmithTrace } from './langsmith.js';
-import { uploadWorkflowReports } from './upload.js';
+import { uploadMessage, uploadWorkflowReports } from './upload.js';
 import { createStarter } from './starter.js';
 import { workflowSummary } from './summary.js';
 import { runDemo } from './demo.js';
@@ -206,7 +206,7 @@ async function main() {
         token: process.env.TRACEDOJO_UPLOAD_TOKEN ?? '',
       },
     );
-    console.log(`Uploaded ${receipt.count} reports. ${receipt.url}`);
+    console.log(uploadMessage(receipt));
     return;
   }
   if (command === 'compare') {
