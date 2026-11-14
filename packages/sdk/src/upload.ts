@@ -32,6 +32,8 @@ export async function uploadWorkflowReports(
     );
   const reports = parseWorkflowReports(input);
   const endpoint = new URL(`/api/projects/${options.project}/runs`, origin);
+  let inserted = 0;
+  let duplicates = 0;
   for (let start = 0; start < reports.length; start += 21) {
     const chunk = reports.slice(start, start + 21);
     const body = JSON.stringify({
@@ -85,11 +87,28 @@ export async function uploadWorkflowReports(
         throw new Error(
           'Unexpected upload receipt. The local report is preserved; retry safely.',
         );
+      inserted += receipt.data.inserted;
+      duplicates += receipt.data.duplicates;
       break;
     }
   }
   return {
     count: reports.length,
+    inserted,
+    duplicates,
     url: new URL(`/projects/${options.project}/workflows`, origin).href,
   };
+}
+
+/** Report what the server stored, not how many reports the file held. */
+export function uploadMessage(receipt: {
+  inserted: number;
+  duplicates: number;
+  url: string;
+}) {
+  const stored = `${receipt.inserted} new ${receipt.inserted === 1 ? 'report' : 'reports'}`;
+  const counts = receipt.duplicates
+    ? `${stored}, ${receipt.duplicates} already stored`
+    : stored;
+  return `Uploaded ${counts}. ${receipt.url}`;
 }
