@@ -21,7 +21,7 @@ npx tracedojo@0.1.1 demo
 For reproducible CI, use an existing npm project or run `npm init -y` first:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.1.2
+npm install --save-dev --save-exact @tracedojo/sdk@0.1.3
 npx --no-install tracedojo init --ci
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```

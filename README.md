@@ -79,7 +79,7 @@ inconclusive, not as passes.
 Then:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.1.2
+npm install --save-dev --save-exact @tracedojo/sdk@0.1.3
 npx tracedojo init            # starter adapter + workflow
 npx tracedojo test --trials 3
 ```
