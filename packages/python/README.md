@@ -17,8 +17,10 @@ JavaScript one for the same workflow.
 
 Python 3.10 or later. No runtime dependencies.
 
-> Not yet published to PyPI. Install from a checkout:
-> `pip install ./packages/python` (add `[langgraph]` for the LangGraph adapter).
+```sh
+pip install tracedojo
+pip install "tracedojo[langgraph]"  # with the LangGraph adapter
+```
 
 ## See a failure and its fix
 

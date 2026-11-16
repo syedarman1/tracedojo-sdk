@@ -50,7 +50,7 @@ the same reports. Its adapter is a `.py` module that defines `tools` and
 `context.call(...)`. Commands, flags, and exit codes match:
 
 ```sh
-pip install ./packages/python
+pip install tracedojo
 tracedojo demo
 tracedojo test --config dojo/workflow.json --adapter dojo/adapter.py --out .tracedojo/first-report.json
 ```
@@ -554,6 +554,14 @@ For complete stateful examples, run `npx --no-install tracedojo templates`, then
 payments, refunds, CRM, email, files, SQL, inventory, subscriptions, and webhooks.
 Each includes five faults and instructions to reproduce a retry bug. These are
 small fixture simulations, not full implementations of external services.
+
+For real service behavior, ten stateful simulations follow each service's response
+shapes, error codes, and idempotency rules: Stripe, Slack, GitHub, Gmail, Google
+Calendar, Postgres, Shopify, Zendesk, Jira, and HubSpot. Start one with
+`npx --no-install tracedojo init --template stripe --out dojo`, or load it in code
+with `loadSimulation('stripe')` from `@tracedojo/sdk/simulations`. Each ships a fixed
+and a broken scripted agent, so you can see the failure before connecting your own.
+See [the simulation catalog](https://github.com/syedarman1/tracedojo-sdk/blob/main/docs/SIMULATIONS.md) for the list and spec format.
 
 ## Async tools and virtual time
 
