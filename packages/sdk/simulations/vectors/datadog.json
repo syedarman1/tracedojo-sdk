@@ -1,0 +1,603 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "datadog",
+  "cases": [
+    {
+      "name": "create then get",
+      "calls": [
+        {
+          "tool": "datadog_incident_create",
+          "args": {
+            "data": {
+              "type": "incidents",
+              "attributes": {
+                "title": "t",
+                "customer_impacted": false
+              }
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000103",
+                "type": "incidents",
+                "attributes": {
+                  "public_id": 103,
+                  "title": "t",
+                  "severity": "UNKNOWN",
+                  "state": "active",
+                  "customer_impacted": false,
+                  "customer_impact_scope": null,
+                  "created": "2024-11-15T05:53:21Z",
+                  "modified": "2024-11-15T05:53:21Z",
+                  "resolved": null
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "datadog_incident_get",
+          "args": {
+            "incident_id": "00000000-0000-4000-8000-000000000103"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000103",
+                "type": "incidents",
+                "attributes": {
+                  "public_id": 103,
+                  "title": "t",
+                  "severity": "UNKNOWN",
+                  "state": "active",
+                  "customer_impacted": false,
+                  "customer_impact_scope": null,
+                  "created": "2024-11-15T05:53:21Z",
+                  "modified": "2024-11-15T05:53:21Z",
+                  "resolved": null
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/incidents/2": {
+          "id": "00000000-0000-4000-8000-000000000103",
+          "type": "incidents",
+          "attributes": {
+            "public_id": 103,
+            "title": "t",
+            "severity": "UNKNOWN",
+            "state": "active",
+            "customer_impacted": false,
+            "customer_impact_scope": null,
+            "created": "2024-11-15T05:53:21Z",
+            "modified": "2024-11-15T05:53:21Z",
+            "resolved": null
+          }
+        }
+      }
+    },
+    {
+      "name": "create twice declares two",
+      "calls": [
+        {
+          "tool": "datadog_incident_create",
+          "args": {
+            "data": {
+              "type": "incidents",
+              "attributes": {
+                "title": "t",
+                "customer_impacted": false
+              }
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000103",
+                "type": "incidents",
+                "attributes": {
+                  "public_id": 103,
+                  "title": "t",
+                  "severity": "UNKNOWN",
+                  "state": "active",
+                  "customer_impacted": false,
+                  "customer_impact_scope": null,
+                  "created": "2024-11-15T05:53:21Z",
+                  "modified": "2024-11-15T05:53:21Z",
+                  "resolved": null
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "datadog_incident_create",
+          "args": {
+            "data": {
+              "type": "incidents",
+              "attributes": {
+                "title": "t",
+                "customer_impacted": false
+              }
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000104",
+                "type": "incidents",
+                "attributes": {
+                  "public_id": 104,
+                  "title": "t",
+                  "severity": "UNKNOWN",
+                  "state": "active",
+                  "customer_impacted": false,
+                  "customer_impact_scope": null,
+                  "created": "2024-11-15T05:53:22Z",
+                  "modified": "2024-11-15T05:53:22Z",
+                  "resolved": null
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "datadog_incidents_search",
+          "args": {
+            "state": [
+              "active"
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "type": "incidents_search_results",
+                "attributes": {
+                  "incidents": [
+                    {
+                      "data": {
+                        "id": "00000000-0000-4000-8000-000000000102",
+                        "type": "incidents",
+                        "attributes": {
+                          "public_id": 102,
+                          "title": "Search index lagging",
+                          "severity": "SEV-4",
+                          "state": "active",
+                          "customer_impacted": false,
+                          "customer_impact_scope": null,
+                          "created": "2024-11-15T04:00:00Z",
+                          "modified": "2024-11-15T04:00:00Z",
+                          "resolved": null
+                        }
+                      }
+                    },
+                    {
+                      "data": {
+                        "id": "00000000-0000-4000-8000-000000000103",
+                        "type": "incidents",
+                        "attributes": {
+                          "public_id": 103,
+                          "title": "t",
+                          "severity": "UNKNOWN",
+                          "state": "active",
+                          "customer_impacted": false,
+                          "customer_impact_scope": null,
+                          "created": "2024-11-15T05:53:21Z",
+                          "modified": "2024-11-15T05:53:21Z",
+                          "resolved": null
+                        }
+                      }
+                    },
+                    {
+                      "data": {
+                        "id": "00000000-0000-4000-8000-000000000104",
+                        "type": "incidents",
+                        "attributes": {
+                          "public_id": 104,
+                          "title": "t",
+                          "severity": "UNKNOWN",
+                          "state": "active",
+                          "customer_impacted": false,
+                          "customer_impact_scope": null,
+                          "created": "2024-11-15T05:53:22Z",
+                          "modified": "2024-11-15T05:53:22Z",
+                          "resolved": null
+                        }
+                      }
+                    }
+                  ],
+                  "total": 3
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "resolve twice changes once",
+      "calls": [
+        {
+          "tool": "datadog_incident_update",
+          "args": {
+            "incident_id": "00000000-0000-4000-8000-000000000102",
+            "data": {
+              "id": "00000000-0000-4000-8000-000000000102",
+              "type": "incidents",
+              "attributes": {
+                "fields": {
+                  "state": {
+                    "type": "dropdown",
+                    "value": "resolved"
+                  }
+                }
+              }
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000102",
+                "type": "incidents",
+                "attributes": {
+                  "public_id": 102,
+                  "title": "Search index lagging",
+                  "severity": "SEV-4",
+                  "state": "resolved",
+                  "customer_impacted": false,
+                  "customer_impact_scope": null,
+                  "created": "2024-11-15T04:00:00Z",
+                  "modified": "2024-11-15T05:53:20Z",
+                  "resolved": "2024-11-15T05:53:20Z"
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "datadog_incident_update",
+          "args": {
+            "incident_id": "00000000-0000-4000-8000-000000000102",
+            "data": {
+              "id": "00000000-0000-4000-8000-000000000102",
+              "type": "incidents",
+              "attributes": {
+                "fields": {
+                  "state": {
+                    "type": "dropdown",
+                    "value": "resolved"
+                  }
+                }
+              }
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000102",
+                "type": "incidents",
+                "attributes": {
+                  "public_id": 102,
+                  "title": "Search index lagging",
+                  "severity": "SEV-4",
+                  "state": "resolved",
+                  "customer_impacted": false,
+                  "customer_impact_scope": null,
+                  "created": "2024-11-15T04:00:00Z",
+                  "modified": "2024-11-15T05:53:20Z",
+                  "resolved": "2024-11-15T05:53:20Z"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/incidents/1/attributes": {
+          "public_id": 102,
+          "title": "Search index lagging",
+          "severity": "SEV-4",
+          "state": "resolved",
+          "customer_impacted": false,
+          "customer_impact_scope": null,
+          "created": "2024-11-15T04:00:00Z",
+          "modified": "2024-11-15T05:53:20Z",
+          "resolved": "2024-11-15T05:53:20Z"
+        }
+      }
+    },
+    {
+      "name": "reopen clears resolved",
+      "calls": [
+        {
+          "tool": "datadog_incident_update",
+          "args": {
+            "incident_id": "00000000-0000-4000-8000-000000000101",
+            "data": {
+              "id": "00000000-0000-4000-8000-000000000101",
+              "type": "incidents",
+              "attributes": {
+                "fields": {
+                  "state": {
+                    "type": "dropdown",
+                    "value": "active"
+                  }
+                }
+              }
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000101",
+                "type": "incidents",
+                "attributes": {
+                  "public_id": 101,
+                  "title": "Login latency above 2s",
+                  "severity": "SEV-3",
+                  "state": "active",
+                  "customer_impacted": false,
+                  "customer_impact_scope": null,
+                  "created": "2024-11-12T08:00:00Z",
+                  "modified": "2024-11-15T05:53:20Z",
+                  "resolved": null
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/incidents/0/attributes": {
+          "public_id": 101,
+          "title": "Login latency above 2s",
+          "severity": "SEV-3",
+          "state": "active",
+          "customer_impacted": false,
+          "customer_impact_scope": null,
+          "created": "2024-11-12T08:00:00Z",
+          "modified": "2024-11-15T05:53:20Z",
+          "resolved": null
+        }
+      }
+    },
+    {
+      "name": "impact scope required, bad severity and state",
+      "calls": [
+        {
+          "tool": "datadog_incident_create",
+          "args": {
+            "data": {
+              "type": "incidents",
+              "attributes": {
+                "title": "t",
+                "customer_impacted": true
+              }
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "bad_request",
+              "message": "Bad Request",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "datadog_incident_create",
+          "args": {
+            "data": {
+              "type": "incidents",
+              "attributes": {
+                "title": "t",
+                "customer_impacted": false,
+                "fields": {
+                  "severity": {
+                    "type": "dropdown",
+                    "value": "SEV-9"
+                  }
+                }
+              }
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "bad_request",
+              "message": "Invalid value for fields.severity",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "datadog_incident_update",
+          "args": {
+            "incident_id": "00000000-0000-4000-8000-000000000102",
+            "data": {
+              "id": "00000000-0000-4000-8000-000000000102",
+              "type": "incidents",
+              "attributes": {
+                "fields": {
+                  "state": {
+                    "type": "dropdown",
+                    "value": "closed"
+                  }
+                }
+              }
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "bad_request",
+              "message": "Invalid value for fields.state",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "datadog_incident_update",
+          "args": {
+            "incident_id": "00000000-0000-4000-8000-000000000102",
+            "data": {
+              "id": "00000000-0000-4000-8000-000000000101",
+              "type": "incidents",
+              "attributes": {}
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "bad_request",
+              "message": "Bad Request",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "not found and invalid input",
+      "calls": [
+        {
+          "tool": "datadog_incident_get",
+          "args": {
+            "incident_id": "nope"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "not_found",
+              "message": "Not Found",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "datadog_incident_update",
+          "args": {
+            "incident_id": "00000000-0000-4000-8000-000000000999",
+            "data": {
+              "id": "00000000-0000-4000-8000-000000000999",
+              "type": "incidents",
+              "attributes": {
+                "fields": {
+                  "state": {
+                    "type": "dropdown",
+                    "value": "resolved"
+                  }
+                }
+              }
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "not_found",
+              "message": "Not Found",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "datadog_incident_create",
+          "args": {
+            "data": {
+              "type": "incident",
+              "attributes": {
+                "title": "t",
+                "customer_impacted": false
+              }
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "bad_request",
+              "message": "Bad Request",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "datadog_incidents_search",
+          "args": {
+            "state": "active"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "bad_request",
+              "message": "Bad Request",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "search by severity",
+      "calls": [
+        {
+          "tool": "datadog_incidents_search",
+          "args": {
+            "severity": [
+              "SEV-3",
+              "SEV-4"
+            ],
+            "state": [
+              "active"
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "type": "incidents_search_results",
+                "attributes": {
+                  "incidents": [
+                    {
+                      "data": {
+                        "id": "00000000-0000-4000-8000-000000000102",
+                        "type": "incidents",
+                        "attributes": {
+                          "public_id": 102,
+                          "title": "Search index lagging",
+                          "severity": "SEV-4",
+                          "state": "active",
+                          "customer_impacted": false,
+                          "customer_impact_scope": null,
+                          "created": "2024-11-15T04:00:00Z",
+                          "modified": "2024-11-15T04:00:00Z",
+                          "resolved": null
+                        }
+                      }
+                    }
+                  ],
+                  "total": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}

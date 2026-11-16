@@ -642,7 +642,10 @@ function scriptAgent(spec: SimulationSpec, variant: 'fixed' | 'broken'): Workflo
               const where = resolveTemplate(step.beforeRetry.find.where, scope) as Obj;
               const match = Array.isArray(items)
                 ? items.find((item) =>
-                    Object.entries(where).every(([k, v]) => equal(own(item, k), v)),
+                    // A key starting with "/" is a JSON pointer into the item.
+                    Object.entries(where).every(([k, v]) =>
+                      equal(k.startsWith('/') ? pointerGet(item, k) : own(item, k), v),
+                    ),
                   )
                 : undefined;
               if (match !== undefined) {
