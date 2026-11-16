@@ -33,3 +33,30 @@ jobs:
           adapter: packages/sdk/templates/adapter.mjs
           report: .tracedojo/action-smoke.json
           trials: "1"
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.13"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # The parity tests run the built JavaScript SDK against Python reports.
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - working-directory: packages/python
+        run: python -m pip install -e ".[langgraph]" pytest
+      - working-directory: packages/python
+        env:
+          TRACEDOJO_REQUIRE_PARITY: "1"
+        run: python -m pytest
