@@ -33,8 +33,8 @@ Both no-fault controls passed. Scripted example; no model calls.
 The Python SDK lives in [`packages/python`](packages/python). It reads the same
 `workflow.json`, injects the same faults, and writes the same report format, so the
 dashboard, `compare`, and the CI gate accept reports from either language. It is
-not on PyPI yet; install it from a checkout with `pip install ./packages/python`,
-then run `tracedojo demo`. Python 3.10 or later, with a LangGraph adapter.
+on PyPI: `pip install tracedojo`, then run `tracedojo demo`. Python 3.10 or later,
+with a LangGraph adapter (`pip install "tracedojo[langgraph]"`).
 
 ## What it catches
 
