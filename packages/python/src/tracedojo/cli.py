@@ -108,7 +108,10 @@ def load_adapter(path: str | Path) -> ModuleType:
     sys.path.insert(0, str(file.parent))
     try:
         sys.modules[name] = module
-        spec.loader.exec_module(module)
+        # Compile from source every time. The bytecode cache is keyed on whole-second
+        # mtime and size, so an adapter edited right after a run could load stale code.
+        code = compile(file.read_bytes(), str(file), "exec", dont_inherit=True)
+        exec(code, module.__dict__)
     except Exception:
         sys.modules.pop(name, None)
         raise TracedojoError(
