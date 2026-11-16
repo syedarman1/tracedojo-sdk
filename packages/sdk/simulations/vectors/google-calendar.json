@@ -1,0 +1,551 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "google-calendar",
+  "cases": [
+    {
+      "name": "insert then get",
+      "calls": [
+        {
+          "tool": "calendar_events_insert",
+          "args": {
+            "calendarId": "primary",
+            "id": "abc00001",
+            "summary": "x",
+            "start": {
+              "dateTime": "2024-11-21T10:00:00Z"
+            },
+            "end": {
+              "dateTime": "2024-11-21T11:00:00Z"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "kind": "calendar#event",
+              "etag": "\"0000000000000001\"",
+              "id": "abc00001",
+              "status": "confirmed",
+              "htmlLink": "https://www.google.com/calendar/event?eid=abc00001",
+              "created": "2024-11-15T05:53:21Z",
+              "updated": "2024-11-15T05:53:21Z",
+              "summary": "x",
+              "creator": {
+                "email": "ops@shop.example",
+                "self": true
+              },
+              "organizer": {
+                "email": "ops@shop.example",
+                "self": true
+              },
+              "start": {
+                "dateTime": "2024-11-21T10:00:00Z"
+              },
+              "end": {
+                "dateTime": "2024-11-21T11:00:00Z"
+              },
+              "attendees": [],
+              "iCalUID": "abc00001@google.com",
+              "sequence": 0,
+              "reminders": {
+                "useDefault": true
+              }
+            }
+          }
+        },
+        {
+          "tool": "calendar_events_get",
+          "args": {
+            "calendarId": "primary",
+            "eventId": "abc00001"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "kind": "calendar#event",
+              "etag": "\"0000000000000001\"",
+              "id": "abc00001",
+              "status": "confirmed",
+              "htmlLink": "https://www.google.com/calendar/event?eid=abc00001",
+              "created": "2024-11-15T05:53:21Z",
+              "updated": "2024-11-15T05:53:21Z",
+              "summary": "x",
+              "creator": {
+                "email": "ops@shop.example",
+                "self": true
+              },
+              "organizer": {
+                "email": "ops@shop.example",
+                "self": true
+              },
+              "start": {
+                "dateTime": "2024-11-21T10:00:00Z"
+              },
+              "end": {
+                "dateTime": "2024-11-21T11:00:00Z"
+              },
+              "attendees": [],
+              "iCalUID": "abc00001@google.com",
+              "sequence": 0,
+              "reminders": {
+                "useDefault": true
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/events/2": {
+          "kind": "calendar#event",
+          "etag": "\"0000000000000001\"",
+          "id": "abc00001",
+          "status": "confirmed",
+          "htmlLink": "https://www.google.com/calendar/event?eid=abc00001",
+          "created": "2024-11-15T05:53:21Z",
+          "updated": "2024-11-15T05:53:21Z",
+          "summary": "x",
+          "creator": {
+            "email": "ops@shop.example",
+            "self": true
+          },
+          "organizer": {
+            "email": "ops@shop.example",
+            "self": true
+          },
+          "start": {
+            "dateTime": "2024-11-21T10:00:00Z"
+          },
+          "end": {
+            "dateTime": "2024-11-21T11:00:00Z"
+          },
+          "attendees": [],
+          "iCalUID": "abc00001@google.com",
+          "sequence": 0,
+          "reminders": {
+            "useDefault": true
+          }
+        }
+      }
+    },
+    {
+      "name": "duplicate id returns 409",
+      "calls": [
+        {
+          "tool": "calendar_events_insert",
+          "args": {
+            "calendarId": "primary",
+            "id": "abc00001",
+            "summary": "x",
+            "start": {
+              "dateTime": "2024-11-21T10:00:00Z"
+            },
+            "end": {
+              "dateTime": "2024-11-21T11:00:00Z"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "kind": "calendar#event",
+              "etag": "\"0000000000000001\"",
+              "id": "abc00001",
+              "status": "confirmed",
+              "htmlLink": "https://www.google.com/calendar/event?eid=abc00001",
+              "created": "2024-11-15T05:53:21Z",
+              "updated": "2024-11-15T05:53:21Z",
+              "summary": "x",
+              "creator": {
+                "email": "ops@shop.example",
+                "self": true
+              },
+              "organizer": {
+                "email": "ops@shop.example",
+                "self": true
+              },
+              "start": {
+                "dateTime": "2024-11-21T10:00:00Z"
+              },
+              "end": {
+                "dateTime": "2024-11-21T11:00:00Z"
+              },
+              "attendees": [],
+              "iCalUID": "abc00001@google.com",
+              "sequence": 0,
+              "reminders": {
+                "useDefault": true
+              }
+            }
+          }
+        },
+        {
+          "tool": "calendar_events_insert",
+          "args": {
+            "calendarId": "primary",
+            "id": "abc00001",
+            "summary": "x",
+            "start": {
+              "dateTime": "2024-11-21T10:00:00Z"
+            },
+            "end": {
+              "dateTime": "2024-11-21T11:00:00Z"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "duplicate",
+              "message": "The requested identifier already exists.",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "patch with wrong ifMatch returns 412",
+      "calls": [
+        {
+          "tool": "calendar_events_patch",
+          "args": {
+            "calendarId": "primary",
+            "eventId": "standup0001",
+            "ifMatch": "\"1\"",
+            "summary": "y"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "conditionNotMet",
+              "message": "Precondition Failed",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "patch with right ifMatch bumps etag and sequence",
+      "calls": [
+        {
+          "tool": "calendar_events_patch",
+          "args": {
+            "calendarId": "primary",
+            "eventId": "standup0001",
+            "ifMatch": "\"0000000000000901\"",
+            "start": {
+              "dateTime": "2024-11-20T09:30:00Z"
+            },
+            "end": {
+              "dateTime": "2024-11-20T09:45:00Z"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "kind": "calendar#event",
+              "etag": "\"0000000000000001\"",
+              "id": "standup0001",
+              "status": "confirmed",
+              "htmlLink": "https://www.google.com/calendar/event?eid=standup0001",
+              "created": "2024-11-14T10:00:00Z",
+              "updated": "2024-11-15T05:53:21Z",
+              "summary": "Ops standup",
+              "creator": {
+                "email": "ops@shop.example",
+                "self": true
+              },
+              "organizer": {
+                "email": "ops@shop.example",
+                "self": true
+              },
+              "start": {
+                "dateTime": "2024-11-20T09:30:00Z"
+              },
+              "end": {
+                "dateTime": "2024-11-20T09:45:00Z"
+              },
+              "attendees": [
+                {
+                  "email": "alex@shop.example",
+                  "responseStatus": "needsAction"
+                },
+                {
+                  "email": "sam@shop.example",
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "iCalUID": "standup0001@google.com",
+              "sequence": 1,
+              "reminders": {
+                "useDefault": true
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/events/0": {
+          "kind": "calendar#event",
+          "etag": "\"0000000000000001\"",
+          "id": "standup0001",
+          "status": "confirmed",
+          "htmlLink": "https://www.google.com/calendar/event?eid=standup0001",
+          "created": "2024-11-14T10:00:00Z",
+          "updated": "2024-11-15T05:53:21Z",
+          "summary": "Ops standup",
+          "creator": {
+            "email": "ops@shop.example",
+            "self": true
+          },
+          "organizer": {
+            "email": "ops@shop.example",
+            "self": true
+          },
+          "start": {
+            "dateTime": "2024-11-20T09:30:00Z"
+          },
+          "end": {
+            "dateTime": "2024-11-20T09:45:00Z"
+          },
+          "attendees": [
+            {
+              "email": "alex@shop.example",
+              "responseStatus": "needsAction"
+            },
+            {
+              "email": "sam@shop.example",
+              "responseStatus": "needsAction"
+            }
+          ],
+          "iCalUID": "standup0001@google.com",
+          "sequence": 1,
+          "reminders": {
+            "useDefault": true
+          }
+        }
+      }
+    },
+    {
+      "name": "empty time range",
+      "calls": [
+        {
+          "tool": "calendar_events_insert",
+          "args": {
+            "calendarId": "primary",
+            "id": "abc00001",
+            "summary": "x",
+            "start": {
+              "dateTime": "2024-11-21T10:00:00Z"
+            },
+            "end": {
+              "dateTime": "2024-11-21T10:00:00Z"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "timeRangeEmpty",
+              "message": "The specified time range is empty.",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "not found and unknown calendar",
+      "calls": [
+        {
+          "tool": "calendar_events_get",
+          "args": {
+            "calendarId": "primary",
+            "eventId": "nope0"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "notFound",
+              "message": "Not Found",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "calendar_events_list",
+          "args": {
+            "calendarId": "other@x"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "notFound",
+              "message": "Not Found",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "invalid input",
+      "calls": [
+        {
+          "tool": "calendar_events_insert",
+          "args": {
+            "calendarId": "primary",
+            "start": {
+              "dateTime": "x"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "required",
+              "message": "Required: end",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "calendar_events_insert",
+          "args": {
+            "calendarId": "primary",
+            "id": "BAD_ID",
+            "summary": "x",
+            "start": {
+              "dateTime": "2024-11-21T10:00:00Z"
+            },
+            "end": {
+              "dateTime": "2024-11-21T11:00:00Z"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid",
+              "message": "Invalid value for: id",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "calendar_events_list",
+          "args": {
+            "calendarId": "primary",
+            "bogus": 1
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid",
+              "message": "Invalid value for: bogus",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "list by time window",
+      "calls": [
+        {
+          "tool": "calendar_events_list",
+          "args": {
+            "calendarId": "primary",
+            "timeMin": "2024-11-20T09:10:00Z",
+            "timeMax": "2024-11-20T16:30:00Z"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "kind": "calendar#events",
+              "summary": "ops@shop.example",
+              "timeZone": "UTC",
+              "items": [
+                {
+                  "kind": "calendar#event",
+                  "etag": "\"0000000000000901\"",
+                  "id": "standup0001",
+                  "status": "confirmed",
+                  "htmlLink": "https://www.google.com/calendar/event?eid=standup0001",
+                  "created": "2024-11-14T10:00:00Z",
+                  "updated": "2024-11-14T10:00:00Z",
+                  "summary": "Ops standup",
+                  "creator": {
+                    "email": "ops@shop.example",
+                    "self": true
+                  },
+                  "organizer": {
+                    "email": "ops@shop.example",
+                    "self": true
+                  },
+                  "start": {
+                    "dateTime": "2024-11-20T09:00:00Z"
+                  },
+                  "end": {
+                    "dateTime": "2024-11-20T09:15:00Z"
+                  },
+                  "attendees": [
+                    {
+                      "email": "alex@shop.example",
+                      "responseStatus": "needsAction"
+                    },
+                    {
+                      "email": "sam@shop.example",
+                      "responseStatus": "needsAction"
+                    }
+                  ],
+                  "iCalUID": "standup0001@google.com",
+                  "sequence": 0,
+                  "reminders": {
+                    "useDefault": true
+                  }
+                },
+                {
+                  "kind": "calendar#event",
+                  "etag": "\"0000000000000902\"",
+                  "id": "review0002",
+                  "status": "confirmed",
+                  "htmlLink": "https://www.google.com/calendar/event?eid=review0002",
+                  "created": "2024-11-14T11:00:00Z",
+                  "updated": "2024-11-14T11:00:00Z",
+                  "summary": "Quarterly review",
+                  "creator": {
+                    "email": "ops@shop.example",
+                    "self": true
+                  },
+                  "organizer": {
+                    "email": "ops@shop.example",
+                    "self": true
+                  },
+                  "start": {
+                    "dateTime": "2024-11-20T16:00:00Z"
+                  },
+                  "end": {
+                    "dateTime": "2024-11-20T17:00:00Z"
+                  },
+                  "attendees": [
+                    {
+                      "email": "riley@shop.example",
+                      "responseStatus": "needsAction"
+                    }
+                  ],
+                  "iCalUID": "review0002@google.com",
+                  "sequence": 0,
+                  "reminders": {
+                    "useDefault": true
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}

@@ -1,0 +1,388 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "postgres",
+  "cases": [
+    {
+      "name": "insert then select",
+      "calls": [
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "orders",
+            "values": {
+              "external_id": "e1",
+              "customer_id": 7,
+              "total_cents": 100
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "command": "INSERT",
+              "rowCount": 1,
+              "rows": [
+                {
+                  "id": 1002,
+                  "external_id": "e1",
+                  "customer_id": 7,
+                  "total_cents": 100,
+                  "status": "pending",
+                  "created_at": "2024-11-15T05:53:21Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "tool": "pg_select",
+          "args": {
+            "table": "orders",
+            "filters": [
+              {
+                "column": "external_id",
+                "op": "eq",
+                "value": "e1"
+              }
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "command": "SELECT",
+              "rowCount": 1,
+              "rows": [
+                {
+                  "id": 1002,
+                  "external_id": "e1",
+                  "customer_id": 7,
+                  "total_cents": 100,
+                  "status": "pending",
+                  "created_at": "2024-11-15T05:53:21Z"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/orders/1": {
+          "id": 1002,
+          "external_id": "e1",
+          "customer_id": 7,
+          "total_cents": 100,
+          "status": "pending",
+          "created_at": "2024-11-15T05:53:21Z"
+        }
+      }
+    },
+    {
+      "name": "on conflict do nothing returns rowCount 0",
+      "calls": [
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "orders",
+            "values": {
+              "external_id": "checkout_6",
+              "customer_id": 7,
+              "total_cents": 100
+            },
+            "on_conflict": {
+              "target": "external_id",
+              "action": "do_nothing"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "command": "INSERT",
+              "rowCount": 0,
+              "rows": []
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "duplicate without on conflict is 23505",
+      "calls": [
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "orders",
+            "values": {
+              "external_id": "checkout_6",
+              "customer_id": 7,
+              "total_cents": 100
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "23505",
+              "message": "duplicate key value violates unique constraint \"orders_external_id_key\"",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "customers",
+            "values": {
+              "email": "jordan@example.com"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "23505",
+              "message": "duplicate key value violates unique constraint \"customers_email_key\"",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "constraint violations",
+      "calls": [
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "orders",
+            "values": {
+              "external_id": "e1",
+              "customer_id": 99,
+              "total_cents": 100
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "23503",
+              "message": "insert or update on table \"orders\" violates foreign key constraint \"orders_customer_id_fkey\"",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "orders",
+            "values": {
+              "external_id": "e2",
+              "total_cents": 1
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "23502",
+              "message": "null value in column \"customer_id\" of relation \"orders\" violates not-null constraint",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "orders",
+            "values": {
+              "external_id": "e1",
+              "customer_id": 7,
+              "total_cents": "1.5"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "22P02",
+              "message": "invalid input syntax for type integer: \"1.5\"",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "orders",
+            "values": {
+              "external_id": "e1",
+              "customer_id": 7,
+              "total_cents": 100
+            },
+            "on_conflict": {
+              "target": "status",
+              "action": "do_nothing"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "42P10",
+              "message": "there is no unique or exclusion constraint matching the ON CONFLICT specification",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "undefined table and column",
+      "calls": [
+        {
+          "tool": "pg_select",
+          "args": {
+            "table": "users"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "42P01",
+              "message": "relation \"users\" does not exist",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pg_select",
+          "args": {
+            "table": "orders",
+            "filters": [
+              {
+                "column": "nope",
+                "op": "eq",
+                "value": 1
+              }
+            ]
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "42703",
+              "message": "column \"nope\" of relation \"orders\" does not exist",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "customers",
+            "values": {
+              "email": "a@b.c",
+              "age": 3
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "42703",
+              "message": "column \"age\" of relation \"customers\" does not exist",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "select filters and limit",
+      "calls": [
+        {
+          "tool": "pg_select",
+          "args": {
+            "table": "customers",
+            "filters": [
+              {
+                "column": "id",
+                "op": "in",
+                "value": [
+                  7,
+                  8
+                ]
+              }
+            ],
+            "limit": 1
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "command": "SELECT",
+              "rowCount": 1,
+              "rows": [
+                {
+                  "id": 7,
+                  "email": "jordan@example.com",
+                  "name": "Jordan Lee"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "tool": "pg_select",
+          "args": {
+            "table": "orders",
+            "filters": [
+              {
+                "column": "total_cents",
+                "op": "gt",
+                "value": 2000
+              }
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "command": "SELECT",
+              "rowCount": 0,
+              "rows": []
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "insert customer",
+      "calls": [
+        {
+          "tool": "pg_insert",
+          "args": {
+            "table": "customers",
+            "values": {
+              "email": "new@example.com",
+              "name": "New"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "command": "INSERT",
+              "rowCount": 1,
+              "rows": [
+                {
+                  "id": 9,
+                  "email": "new@example.com",
+                  "name": "New"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/customers/2": {
+          "id": 9,
+          "email": "new@example.com",
+          "name": "New"
+        }
+      }
+    }
+  ]
+}
