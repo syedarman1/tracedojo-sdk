@@ -3,6 +3,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { parseWorkflow, type Json, type State } from './schema.js';
+import { loadSimulation, simulationIds } from './simulations.js';
 
 interface World {
   id: string;
@@ -163,7 +164,72 @@ export const starterWorlds = [
   ...faultWorlds,
 ];
 
+/** Stateful service simulations, also available as `init --template <id>`. */
+export const simulationWorlds = simulationIds.map((id) => {
+  const { spec } = loadSimulation(id);
+  return { id, title: `${spec.title}: ${spec.workflow.title}` };
+});
+
+/** Every id `init --template` accepts. */
+export const templateWorlds = [...starterWorlds, ...simulationWorlds];
+
+function simulationFiles(id: string): Record<string, string> {
+  const sim = loadSimulation(id);
+  const { spec } = sim;
+  const adapter = `// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Syed Arman
+
+import { loadSimulation } from '@tracedojo/sdk/simulations';
+
+// Stateful ${spec.api.name} simulation shipped with the SDK.
+const sim = loadSimulation(${JSON.stringify(id)});
+
+export const tools = sim.tools;
+
+// Scripted reference agent. Change 'fixed' to 'broken' to watch the
+// ${spec.agent.bugScenario} scenario fail. Replace it with your agent and
+// route every tool call through context.call.
+export function createAgent() {
+  return sim.createAgent('fixed');
+}
+`;
+  const readme = `# ${spec.title}: ${spec.workflow.title}
+
+A stateful, in-memory simulation of the ${spec.api.name} (${spec.api.version}). No model calls or real services.
+
+Run from your repository with the SDK installed:
+
+\`\`\`sh
+npx --no-install tracedojo test --config PATH/workflow.json --adapter PATH/adapter.mjs
+\`\`\`
+
+Replace PATH with this directory. Eight scenarios cover a lost confirmation, a request timeout, temporary unavailability, a truncated response, revoked permission, duplicate delivery, a stale read and prompt injection.
+
+## Tools
+
+${Object.entries(spec.tools)
+  .map(([name, tool]) => `- \`${name}\` (${tool.kind}): ${tool.description}`)
+  .join('\n')}
+
+## The bug to reproduce
+
+${spec.agent.bug}
+
+In \`adapter.mjs\`, change \`createAgent('fixed')\` to \`createAgent('broken')\`. The ${spec.agent.bugScenario} scenario must fail. Change it back to pass.
+
+Shapes, idempotency and error codes follow ${spec.api.docs}. Errors marked \`verified: false\` in the spec were not confirmed against official documentation. See docs/SIMULATIONS.md in the TraceDojo SDK repository for fidelity notes and deviations.
+
+Local adapters are trusted code, not sandboxed. Add .tracedojo/ to .gitignore; reports can contain application data.
+`;
+  return {
+    'workflow.json': JSON.stringify(sim.workflow(), null, 2) + '\n',
+    'adapter.mjs': adapter,
+    'README.md': readme,
+  };
+}
+
 export async function worldFiles(id: string): Promise<Record<string, string>> {
+  if (simulationIds.includes(id)) return simulationFiles(id);
   if (faultWorlds.some((world) => world.id === id)) {
     const files: Record<string, string> = {};
     for (const name of ['workflow.json', 'adapter.mjs', 'README.md'])
@@ -185,7 +251,7 @@ export async function worldFiles(id: string): Promise<Record<string, string>> {
   const world = worlds.find((item) => item.id === id);
   if (!world)
     throw new Error(
-      `Unknown template. Choose: ${starterWorlds.map((w) => w.id).join(', ')}.`,
+      `Unknown template. Choose: ${templateWorlds.map((w) => w.id).join(', ')}.`,
     );
   const checks = [
     {

@@ -1,0 +1,542 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "shopify",
+  "cases": [
+    {
+      "name": "adjust then read",
+      "calls": [
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "available",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/7001",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -3
+                }
+              ]
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": {
+                    "id": "gid://shopify/InventoryAdjustmentGroup/90001",
+                    "createdAt": "2024-11-15T05:53:21Z",
+                    "reason": "correction",
+                    "referenceDocumentUri": null,
+                    "changes": [
+                      {
+                        "name": "available",
+                        "delta": -3,
+                        "quantityAfterChange": null,
+                        "item": {
+                          "id": "gid://shopify/InventoryItem/7001"
+                        },
+                        "location": {
+                          "id": "gid://shopify/Location/1"
+                        }
+                      }
+                    ]
+                  },
+                  "userErrors": []
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "shopify_inventory_level",
+          "args": {
+            "inventoryItemId": "gid://shopify/InventoryItem/7001",
+            "locationId": "gid://shopify/Location/1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/7001",
+                  "sku": "MUG-BLK",
+                  "inventoryLevel": {
+                    "id": "gid://shopify/InventoryLevel/7001?inventory_item_id=7001",
+                    "location": {
+                      "id": "gid://shopify/Location/1"
+                    },
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 7
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/inventory_levels/0/available": 7,
+        "/adjustment_groups/0": {
+          "id": "gid://shopify/InventoryAdjustmentGroup/90001",
+          "createdAt": "2024-11-15T05:53:21Z",
+          "reason": "correction",
+          "referenceDocumentUri": null,
+          "changes": [
+            {
+              "name": "available",
+              "delta": -3,
+              "quantityAfterChange": null,
+              "item": {
+                "id": "gid://shopify/InventoryItem/7001"
+              },
+              "location": {
+                "id": "gid://shopify/Location/1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "same key replays",
+      "calls": [
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "available",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/7001",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -1
+                }
+              ]
+            },
+            "idempotencyKey": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": {
+                    "id": "gid://shopify/InventoryAdjustmentGroup/90001",
+                    "createdAt": "2024-11-15T05:53:21Z",
+                    "reason": "correction",
+                    "referenceDocumentUri": null,
+                    "changes": [
+                      {
+                        "name": "available",
+                        "delta": -1,
+                        "quantityAfterChange": null,
+                        "item": {
+                          "id": "gid://shopify/InventoryItem/7001"
+                        },
+                        "location": {
+                          "id": "gid://shopify/Location/1"
+                        }
+                      }
+                    ]
+                  },
+                  "userErrors": []
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "available",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/7001",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -1
+                }
+              ]
+            },
+            "idempotencyKey": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": {
+                    "id": "gid://shopify/InventoryAdjustmentGroup/90001",
+                    "createdAt": "2024-11-15T05:53:21Z",
+                    "reason": "correction",
+                    "referenceDocumentUri": null,
+                    "changes": [
+                      {
+                        "name": "available",
+                        "delta": -1,
+                        "quantityAfterChange": null,
+                        "item": {
+                          "id": "gid://shopify/InventoryItem/7001"
+                        },
+                        "location": {
+                          "id": "gid://shopify/Location/1"
+                        }
+                      }
+                    ]
+                  },
+                  "userErrors": []
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "shopify_inventory_level",
+          "args": {
+            "inventoryItemId": "gid://shopify/InventoryItem/7001",
+            "locationId": "gid://shopify/Location/1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/7001",
+                  "sku": "MUG-BLK",
+                  "inventoryLevel": {
+                    "id": "gid://shopify/InventoryLevel/7001?inventory_item_id=7001",
+                    "location": {
+                      "id": "gid://shopify/Location/1"
+                    },
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 9
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "same key different input is a userError",
+      "calls": [
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "available",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/7001",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -1
+                }
+              ]
+            },
+            "idempotencyKey": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": {
+                    "id": "gid://shopify/InventoryAdjustmentGroup/90001",
+                    "createdAt": "2024-11-15T05:53:21Z",
+                    "reason": "correction",
+                    "referenceDocumentUri": null,
+                    "changes": [
+                      {
+                        "name": "available",
+                        "delta": -1,
+                        "quantityAfterChange": null,
+                        "item": {
+                          "id": "gid://shopify/InventoryItem/7001"
+                        },
+                        "location": {
+                          "id": "gid://shopify/Location/1"
+                        }
+                      }
+                    ]
+                  },
+                  "userErrors": []
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "available",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/7001",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -2
+                }
+              ]
+            },
+            "idempotencyKey": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": null,
+                  "userErrors": [
+                    {
+                      "field": [
+                        "idempotencyKey"
+                      ],
+                      "message": "The same idempotency key cannot be used with different operation parameters.",
+                      "code": "IDEMPOTENCY_KEY_PARAMETER_MISMATCH"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "stale changeFromQuantity",
+      "calls": [
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "available",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/7001",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -1,
+                  "changeFromQuantity": 9
+                }
+              ]
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": null,
+                  "userErrors": [
+                    {
+                      "field": [
+                        "input",
+                        "changes",
+                        "changeFromQuantity"
+                      ],
+                      "message": "The changeFromQuantity argument no longer matches the persisted quantity.",
+                      "code": "CHANGE_FROM_QUANTITY_STALE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "bad reason, name and item",
+      "calls": [
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "lost",
+              "name": "available",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/7001",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -1
+                }
+              ]
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": null,
+                  "userErrors": [
+                    {
+                      "field": [
+                        "input",
+                        "reason"
+                      ],
+                      "message": "The specified reason is invalid.",
+                      "code": "INVALID_REASON"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "on_hand",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/7001",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -1
+                }
+              ]
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": null,
+                  "userErrors": [
+                    {
+                      "field": [
+                        "input",
+                        "name"
+                      ],
+                      "message": "The specified quantity name is invalid.",
+                      "code": "INVALID_QUANTITY_NAME"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "available",
+              "changes": [
+                {
+                  "inventoryItemId": "gid://shopify/InventoryItem/1",
+                  "locationId": "gid://shopify/Location/1",
+                  "delta": -1
+                }
+              ]
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryAdjustQuantities": {
+                  "inventoryAdjustmentGroup": null,
+                  "userErrors": [
+                    {
+                      "field": [
+                        "input",
+                        "changes",
+                        "inventoryItemId"
+                      ],
+                      "message": "The specified inventory item could not be found.",
+                      "code": "INVALID_INVENTORY_ITEM"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "unknown item reads null",
+      "calls": [
+        {
+          "tool": "shopify_inventory_level",
+          "args": {
+            "inventoryItemId": "gid://shopify/InventoryItem/1",
+            "locationId": "gid://shopify/Location/1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "data": {
+                "inventoryItem": null
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "invalid variables",
+      "calls": [
+        {
+          "tool": "shopify_inventory_adjust_quantities",
+          "args": {
+            "input": {
+              "reason": "correction",
+              "name": "available",
+              "changes": []
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "INVALID_VARIABLES",
+              "message": "Variable $input was provided invalid value for input.changes",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "shopify_inventory_level",
+          "args": {
+            "inventoryItemId": "gid://shopify/InventoryItem/7001"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "INVALID_VARIABLES",
+              "message": "Variable $input was provided invalid value for locationId",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}

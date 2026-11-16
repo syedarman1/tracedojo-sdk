@@ -21,7 +21,7 @@ import { uploadMessage, uploadWorkflowReports } from './upload.js';
 import { createStarter } from './starter.js';
 import { workflowSummary } from './summary.js';
 import { runDemo } from './demo.js';
-import { starterWorlds } from './worlds.js';
+import { templateWorlds } from './worlds.js';
 import { createLangSmithStarter } from './langsmith-starter.js';
 import { writeFaultMatrix, testFaultMatrix } from './matrix-cli.js';
 import type { MatrixOptions } from './matrix.js';
@@ -332,7 +332,7 @@ async function main() {
   )
     throw new Error('Unsupported arguments. See --help.');
   if (command === 'templates') {
-    for (const world of starterWorlds)
+    for (const world of templateWorlds)
       console.log(`${world.id.padEnd(16)} ${world.title}`);
     return;
   }

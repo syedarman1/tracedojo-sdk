@@ -48,6 +48,23 @@ try {
   ]);
   run(project, ['exec', '--no', '--', 'tracedojo', 'init', '--ci']);
 
+  // Simulation templates resolve @tracedojo/sdk/simulations from the installed package.
+  run(project, [
+    'exec', '--no', '--', 'tracedojo', 'init', '--template', 'stripe', '--out', 'sim-stripe',
+  ]);
+  run(project, [
+    'exec', '--no', '--', 'tracedojo', 'test',
+    '--config', 'sim-stripe/workflow.json',
+    '--adapter', 'sim-stripe/adapter.mjs',
+    '--out', '.tracedojo/sim-stripe.json',
+  ]);
+  const simBatch = JSON.parse(
+    await readFile(join(project, '.tracedojo/sim-stripe.json'), 'utf8'),
+  );
+  assert.equal(simBatch.baseline.status, 'passed');
+  assert.equal(simBatch.runs.length, 8);
+  assert.ok(simBatch.runs.every((r) => r.status === 'passed'));
+
   // A fresh checkout has no links to the original repo or its node_modules.
   const runner = join(temp, 'ci-runner');
   await mkdir(runner);

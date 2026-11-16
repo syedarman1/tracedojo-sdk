@@ -1,0 +1,423 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "hubspot",
+  "cases": [
+    {
+      "name": "create then search by email, case-insensitive",
+      "calls": [
+        {
+          "tool": "hubspot_contacts_create",
+          "args": {
+            "properties": {
+              "email": "New@Example.com",
+              "firstname": "N"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "103",
+              "properties": {
+                "email": "new@example.com",
+                "firstname": "N",
+                "lifecyclestage": "lead",
+                "createdate": "2024-11-15T05:53:21Z",
+                "lastmodifieddate": "2024-11-15T05:53:21Z",
+                "hs_object_id": "103"
+              },
+              "createdAt": "2024-11-15T05:53:21Z",
+              "updatedAt": "2024-11-15T05:53:21Z",
+              "archived": false
+            }
+          }
+        },
+        {
+          "tool": "hubspot_contacts_search",
+          "args": {
+            "filterGroups": [
+              {
+                "filters": [
+                  {
+                    "propertyName": "email",
+                    "operator": "EQ",
+                    "value": "NEW@example.com"
+                  }
+                ]
+              }
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "total": 1,
+              "results": [
+                {
+                  "id": "103",
+                  "properties": {
+                    "email": "new@example.com",
+                    "firstname": "N",
+                    "lifecyclestage": "lead",
+                    "createdate": "2024-11-15T05:53:21Z",
+                    "lastmodifieddate": "2024-11-15T05:53:21Z",
+                    "hs_object_id": "103"
+                  },
+                  "createdAt": "2024-11-15T05:53:21Z",
+                  "updatedAt": "2024-11-15T05:53:21Z",
+                  "archived": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/contacts/2": {
+          "id": "103",
+          "properties": {
+            "email": "new@example.com",
+            "firstname": "N",
+            "lifecyclestage": "lead",
+            "createdate": "2024-11-15T05:53:21Z",
+            "lastmodifieddate": "2024-11-15T05:53:21Z",
+            "hs_object_id": "103"
+          },
+          "createdAt": "2024-11-15T05:53:21Z",
+          "updatedAt": "2024-11-15T05:53:21Z",
+          "archived": false
+        }
+      }
+    },
+    {
+      "name": "existing email is 409 with id",
+      "calls": [
+        {
+          "tool": "hubspot_contacts_create",
+          "args": {
+            "properties": {
+              "email": "JORDAN@example.com"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "CONFLICT",
+              "message": "Contact already exists. Existing ID: 101",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "groups are ORed, filters ANDed",
+      "calls": [
+        {
+          "tool": "hubspot_contacts_search",
+          "args": {
+            "filterGroups": [
+              {
+                "filters": [
+                  {
+                    "propertyName": "lifecyclestage",
+                    "operator": "EQ",
+                    "value": "lead"
+                  },
+                  {
+                    "propertyName": "firstname",
+                    "operator": "EQ",
+                    "value": "Riley"
+                  }
+                ]
+              },
+              {
+                "filters": [
+                  {
+                    "propertyName": "lastname",
+                    "operator": "EQ",
+                    "value": "Chen"
+                  }
+                ]
+              }
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "total": 1,
+              "results": [
+                {
+                  "id": "102",
+                  "properties": {
+                    "email": "riley@example.com",
+                    "firstname": "Riley",
+                    "lastname": "Chen",
+                    "lifecyclestage": "customer",
+                    "createdate": "2024-11-11T09:00:00Z",
+                    "lastmodifieddate": "2024-11-11T09:00:00Z",
+                    "hs_object_id": "102"
+                  },
+                  "createdAt": "2024-11-11T09:00:00Z",
+                  "updatedAt": "2024-11-11T09:00:00Z",
+                  "archived": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "tool": "hubspot_contacts_search",
+          "args": {
+            "filterGroups": [
+              {
+                "filters": [
+                  {
+                    "propertyName": "lifecyclestage",
+                    "operator": "NEQ",
+                    "value": "lead"
+                  }
+                ]
+              },
+              {
+                "filters": [
+                  {
+                    "propertyName": "firstname",
+                    "operator": "EQ",
+                    "value": "Jordan"
+                  }
+                ]
+              }
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "total": 2,
+              "results": [
+                {
+                  "id": "101",
+                  "properties": {
+                    "email": "jordan@example.com",
+                    "firstname": "Jordan",
+                    "lastname": "Lee",
+                    "lifecyclestage": "lead",
+                    "createdate": "2024-11-10T09:00:00Z",
+                    "lastmodifieddate": "2024-11-10T09:00:00Z",
+                    "hs_object_id": "101"
+                  },
+                  "createdAt": "2024-11-10T09:00:00Z",
+                  "updatedAt": "2024-11-10T09:00:00Z",
+                  "archived": false
+                },
+                {
+                  "id": "102",
+                  "properties": {
+                    "email": "riley@example.com",
+                    "firstname": "Riley",
+                    "lastname": "Chen",
+                    "lifecyclestage": "customer",
+                    "createdate": "2024-11-11T09:00:00Z",
+                    "lastmodifieddate": "2024-11-11T09:00:00Z",
+                    "hs_object_id": "102"
+                  },
+                  "createdAt": "2024-11-11T09:00:00Z",
+                  "updatedAt": "2024-11-11T09:00:00Z",
+                  "archived": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "update twice changes once",
+      "calls": [
+        {
+          "tool": "hubspot_contacts_update",
+          "args": {
+            "contactId": "101",
+            "properties": {
+              "lifecyclestage": "customer"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "101",
+              "properties": {
+                "email": "jordan@example.com",
+                "firstname": "Jordan",
+                "lastname": "Lee",
+                "lifecyclestage": "customer",
+                "createdate": "2024-11-10T09:00:00Z",
+                "lastmodifieddate": "2024-11-15T05:53:20Z",
+                "hs_object_id": "101"
+              },
+              "createdAt": "2024-11-10T09:00:00Z",
+              "updatedAt": "2024-11-15T05:53:20Z",
+              "archived": false
+            }
+          }
+        },
+        {
+          "tool": "hubspot_contacts_update",
+          "args": {
+            "contactId": "101",
+            "properties": {
+              "lifecyclestage": "customer"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "101",
+              "properties": {
+                "email": "jordan@example.com",
+                "firstname": "Jordan",
+                "lastname": "Lee",
+                "lifecyclestage": "customer",
+                "createdate": "2024-11-10T09:00:00Z",
+                "lastmodifieddate": "2024-11-15T05:53:20Z",
+                "hs_object_id": "101"
+              },
+              "createdAt": "2024-11-10T09:00:00Z",
+              "updatedAt": "2024-11-15T05:53:20Z",
+              "archived": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/contacts/0": {
+          "id": "101",
+          "properties": {
+            "email": "jordan@example.com",
+            "firstname": "Jordan",
+            "lastname": "Lee",
+            "lifecyclestage": "customer",
+            "createdate": "2024-11-10T09:00:00Z",
+            "lastmodifieddate": "2024-11-15T05:53:20Z",
+            "hs_object_id": "101"
+          },
+          "createdAt": "2024-11-10T09:00:00Z",
+          "updatedAt": "2024-11-15T05:53:20Z",
+          "archived": false
+        }
+      }
+    },
+    {
+      "name": "not found and bad stage",
+      "calls": [
+        {
+          "tool": "hubspot_contacts_get",
+          "args": {
+            "contactId": "999"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "OBJECT_NOT_FOUND",
+              "message": "resource not found",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "hubspot_contacts_update",
+          "args": {
+            "contactId": "999",
+            "properties": {
+              "firstname": "x"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "OBJECT_NOT_FOUND",
+              "message": "resource not found",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "hubspot_contacts_create",
+          "args": {
+            "properties": {
+              "email": "a@b.c",
+              "lifecyclestage": "vip"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "Property values were not valid: lifecyclestage",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "invalid input",
+      "calls": [
+        {
+          "tool": "hubspot_contacts_search",
+          "args": {
+            "filterGroups": [
+              {
+                "filters": [
+                  {
+                    "propertyName": "email",
+                    "operator": "CONTAINS_TOKEN",
+                    "value": "x"
+                  }
+                ]
+              }
+            ]
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "Property values were not valid: filterGroups.0.filters.0.operator",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "hubspot_contacts_create",
+          "args": {
+            "properties": {
+              "email": "not-an-email"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "Property values were not valid: properties.email",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "hubspot_contacts_get",
+          "args": {},
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "Property values were not valid: contactId",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}

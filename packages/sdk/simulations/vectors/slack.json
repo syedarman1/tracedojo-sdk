@@ -1,0 +1,359 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "slack",
+  "cases": [
+    {
+      "name": "post then read history",
+      "calls": [
+        {
+          "tool": "slack_chat_postMessage",
+          "args": {
+            "channel": "C0OPS",
+            "text": "hi"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "ok": true,
+              "channel": "C0OPS",
+              "ts": "1731650001.000001",
+              "message": {
+                "type": "message",
+                "subtype": "bot_message",
+                "user": "U0TRACEDOJO",
+                "bot_id": "B0TRACEDOJO",
+                "text": "hi",
+                "ts": "1731650001.000001"
+              }
+            }
+          }
+        },
+        {
+          "tool": "slack_conversations_history",
+          "args": {
+            "channel": "C0OPS",
+            "limit": 1
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "ok": true,
+              "messages": [
+                {
+                  "type": "message",
+                  "subtype": "bot_message",
+                  "user": "U0TRACEDOJO",
+                  "bot_id": "B0TRACEDOJO",
+                  "text": "hi",
+                  "ts": "1731650001.000001"
+                }
+              ],
+              "has_more": true,
+              "pin_count": 0,
+              "response_metadata": {
+                "next_cursor": ""
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/messages": [
+          {
+            "channel": "C0OPS",
+            "type": "message",
+            "user": "U0ALEX",
+            "text": "INC-7: checkout errors after deploy 41. Deploy 42 has the fix.",
+            "ts": "1731649000.000100"
+          },
+          {
+            "channel": "C0RANDOM",
+            "type": "message",
+            "user": "U0SAM",
+            "text": "Lunch at noon?",
+            "ts": "1731649100.000200"
+          },
+          {
+            "channel": "C0OPS",
+            "type": "message",
+            "subtype": "bot_message",
+            "user": "U0TRACEDOJO",
+            "bot_id": "B0TRACEDOJO",
+            "text": "hi",
+            "ts": "1731650001.000001"
+          }
+        ]
+      }
+    },
+    {
+      "name": "posting twice creates two messages",
+      "calls": [
+        {
+          "tool": "slack_chat_postMessage",
+          "args": {
+            "channel": "C0OPS",
+            "text": "hi"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "ok": true,
+              "channel": "C0OPS",
+              "ts": "1731650001.000001",
+              "message": {
+                "type": "message",
+                "subtype": "bot_message",
+                "user": "U0TRACEDOJO",
+                "bot_id": "B0TRACEDOJO",
+                "text": "hi",
+                "ts": "1731650001.000001"
+              }
+            }
+          }
+        },
+        {
+          "tool": "slack_chat_postMessage",
+          "args": {
+            "channel": "C0OPS",
+            "text": "hi"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "ok": true,
+              "channel": "C0OPS",
+              "ts": "1731650002.000002",
+              "message": {
+                "type": "message",
+                "subtype": "bot_message",
+                "user": "U0TRACEDOJO",
+                "bot_id": "B0TRACEDOJO",
+                "text": "hi",
+                "ts": "1731650002.000002"
+              }
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/messages": [
+          {
+            "channel": "C0OPS",
+            "type": "message",
+            "user": "U0ALEX",
+            "text": "INC-7: checkout errors after deploy 41. Deploy 42 has the fix.",
+            "ts": "1731649000.000100"
+          },
+          {
+            "channel": "C0RANDOM",
+            "type": "message",
+            "user": "U0SAM",
+            "text": "Lunch at noon?",
+            "ts": "1731649100.000200"
+          },
+          {
+            "channel": "C0OPS",
+            "type": "message",
+            "subtype": "bot_message",
+            "user": "U0TRACEDOJO",
+            "bot_id": "B0TRACEDOJO",
+            "text": "hi",
+            "ts": "1731650001.000001"
+          },
+          {
+            "channel": "C0OPS",
+            "type": "message",
+            "subtype": "bot_message",
+            "user": "U0TRACEDOJO",
+            "bot_id": "B0TRACEDOJO",
+            "text": "hi",
+            "ts": "1731650002.000002"
+          }
+        ]
+      }
+    },
+    {
+      "name": "reaction then already_reacted",
+      "calls": [
+        {
+          "tool": "slack_reactions_add",
+          "args": {
+            "channel": "C0OPS",
+            "timestamp": "1731649000.000100",
+            "name": "eyes"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "ok": true
+            }
+          }
+        },
+        {
+          "tool": "slack_reactions_add",
+          "args": {
+            "channel": "C0OPS",
+            "timestamp": "1731649000.000100",
+            "name": "eyes"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "already_reacted",
+              "message": "already_reacted",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/messages/0": {
+          "channel": "C0OPS",
+          "type": "message",
+          "user": "U0ALEX",
+          "text": "INC-7: checkout errors after deploy 41. Deploy 42 has the fix.",
+          "ts": "1731649000.000100",
+          "reactions": [
+            {
+              "name": "eyes",
+              "users": [
+                "U0TRACEDOJO"
+              ],
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "channel errors",
+      "calls": [
+        {
+          "tool": "slack_chat_postMessage",
+          "args": {
+            "channel": "C0NOPE",
+            "text": "x"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "channel_not_found",
+              "message": "channel_not_found",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "slack_chat_postMessage",
+          "args": {
+            "channel": "C0LEGAL",
+            "text": "x"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "not_in_channel",
+              "message": "not_in_channel",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "slack_chat_postMessage",
+          "args": {
+            "channel": "C0OLD",
+            "text": "x"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "is_archived",
+              "message": "is_archived",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "slack_conversations_history",
+          "args": {
+            "channel": "C0LEGAL"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "not_in_channel",
+              "message": "not_in_channel",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "argument errors",
+      "calls": [
+        {
+          "tool": "slack_chat_postMessage",
+          "args": {
+            "channel": "C0OPS"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "no_text",
+              "message": "no_text",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "slack_chat_postMessage",
+          "args": {
+            "text": "x"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "missing_argument",
+              "message": "missing_argument: channel",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "slack_reactions_add",
+          "args": {
+            "channel": "C0OPS",
+            "timestamp": "1.2",
+            "name": "eyes"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "message_not_found",
+              "message": "message_not_found",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "slack_conversations_history",
+          "args": {
+            "channel": "C0OPS",
+            "limit": "5"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_arguments",
+              "message": "invalid_arguments: limit",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}
