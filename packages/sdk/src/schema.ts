@@ -98,8 +98,54 @@ export const workflowFaultSchema = z.discriminatedUnion('type', [
         (f.type !== 'permission_revoked' || f.repeat === 1),
       'Invalid fault schedule.',
     ),
+  // Model-layer faults are injected by the proxy runner between an agent and its
+  // model API. They target every proxied model request, not a named tool.
+  z
+    .strictObject({
+      type: z.enum([
+        'rate_limited',
+        'server_error',
+        'model_timeout',
+        'stream_cut',
+        'stream_stall',
+      ]),
+      target: z.literal('model'),
+      occurrence: z.number().int().min(1).max(100).default(1),
+      repeat: z.number().int().min(1).max(10).default(1),
+      /** HTTP status for server_error: 500, 502, 503, 504, or 529 (default 503). */
+      status: z
+        .union([
+          z.literal(500),
+          z.literal(502),
+          z.literal(503),
+          z.literal(504),
+          z.literal(529),
+        ])
+        .optional(),
+      /** Stream events forwarded before stream_cut or stream_stall (default 1). */
+      afterChunks: z.number().int().min(0).max(1000).optional(),
+      /** How long model_timeout and stream_stall hold the connection open (default 10000). */
+      delayMs: z.number().int().min(0).max(600000).optional(),
+    })
+    .refine(
+      (f) =>
+        f.occurrence + f.repeat - 1 <= 100 &&
+        (f.status === undefined || f.type === 'server_error') &&
+        (f.afterChunks === undefined ||
+          f.type === 'stream_cut' ||
+          f.type === 'stream_stall') &&
+        (f.delayMs === undefined ||
+          f.type === 'model_timeout' ||
+          f.type === 'stream_stall'),
+      'Invalid fault schedule.',
+    ),
 ]);
 export type WorkflowFault = z.infer<typeof workflowFaultSchema>;
+export type ToolFault = Extract<WorkflowFault, { tool: string }>;
+export type ModelFault = Extract<WorkflowFault, { target: 'model' }>;
+export function isModelFault(fault: WorkflowFault): fault is ModelFault {
+  return 'target' in fault;
+}
 
 export const checkSchema = z.discriminatedUnion('type', [
   z.strictObject({
