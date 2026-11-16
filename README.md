@@ -28,6 +28,14 @@ After:  passed — 1 committed write; the retry reused the original booking.
 Both no-fault controls passed. Scripted example; no model calls.
 ```
 
+### Python
+
+The Python SDK lives in [`packages/python`](packages/python). It reads the same
+`workflow.json`, injects the same faults, and writes the same report format, so the
+dashboard, `compare`, and the CI gate accept reports from either language. It is
+not on PyPI yet; install it from a checkout with `pip install ./packages/python`,
+then run `tracedojo demo`. Python 3.10 or later, with a LangGraph adapter.
+
 ## What it catches
 
 | Fault                                                              | What happens to the tool call                     | Typical agent bug                            |
@@ -169,6 +177,15 @@ npm ci
 npm test
 npm run test:sdk-install
 npm run test:npx-install
+```
+
+The Python SDK's tests, including cross-language parity tests against the built
+JavaScript SDK (run `npm run build` first):
+
+```sh
+cd packages/python
+pip install -e ".[langgraph]" pytest
+pytest
 ```
 
 Tests use synthetic fixtures and need no model API keys. The SDK, launcher, and
