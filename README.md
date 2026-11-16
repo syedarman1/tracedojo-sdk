@@ -86,6 +86,9 @@ npx tracedojo test --trials 3
 
 Ten starter worlds are included — calendar, payments, refunds, CRM, email, files,
 SQL, inventory, subscriptions, webhooks: `npx tracedojo init --template refunds`.
+Ten stateful service simulations (Stripe, Slack, GitHub, Gmail, Google Calendar, Postgres, Shopify,
+Zendesk, Jira, HubSpot) start the same way: `npx tracedojo init --template stripe`. See
+[docs/SIMULATIONS.md](docs/SIMULATIONS.md).
 Or generate a fault matrix from your declared tools: `npx tracedojo matrix`.
 
 ## Test an unmodified agent

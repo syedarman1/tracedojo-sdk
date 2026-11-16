@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Syed Arman
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { parseSimulation } from '../packages/sdk/src/simulation-schema.js';
 import { minimalSpec } from './fixtures/notes-spec.js';
@@ -82,4 +83,13 @@ test('rejects workflow initialState and unsafe names', () => {
   const proto = minimalSpec();
   proto.collections = JSON.parse('{"__proto__": {"unique": []}}');
   assert.throws(() => parseSimulation(proto));
+});
+
+test('published JSON Schema matches the zod schema', () => {
+  const result = spawnSync(
+    process.execPath,
+    ['scripts/export-simulation-schema.mjs', '--check'],
+    { encoding: 'utf8' },
+  );
+  assert.equal(result.status, 0, result.stderr);
 });
