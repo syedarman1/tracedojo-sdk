@@ -1,0 +1,561 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "pagerduty",
+  "cases": [
+    {
+      "name": "trigger with the same dedup_key joins the open incident",
+      "calls": [
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "trigger",
+            "dedup_key": "k1",
+            "payload": {
+              "summary": "s",
+              "source": "x",
+              "severity": "warning"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "k1"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "trigger",
+            "dedup_key": "k1",
+            "payload": {
+              "summary": "s",
+              "source": "x",
+              "severity": "warning"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "k1"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_incidents_list",
+          "args": {
+            "incident_key": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "incidents": [
+                {
+                  "id": "Q0000000001043",
+                  "type": "incident",
+                  "incident_number": 1043,
+                  "title": "s",
+                  "status": "triggered",
+                  "urgency": "low",
+                  "incident_key": "k1",
+                  "service": {
+                    "id": "PCHECKOUT",
+                    "type": "service_reference"
+                  },
+                  "created_at": "2024-11-15T05:53:21Z",
+                  "last_status_change_at": "2024-11-15T05:53:21Z",
+                  "html_url": "https://shop.pagerduty.com/incidents/Q0000000001043"
+                }
+              ],
+              "limit": 25,
+              "offset": 0,
+              "more": false,
+              "total": null
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/incidents/2": {
+          "id": "Q0000000001043",
+          "type": "incident",
+          "incident_number": 1043,
+          "title": "s",
+          "status": "triggered",
+          "urgency": "low",
+          "incident_key": "k1",
+          "service": {
+            "id": "PCHECKOUT",
+            "type": "service_reference"
+          },
+          "created_at": "2024-11-15T05:53:21Z",
+          "last_status_change_at": "2024-11-15T05:53:21Z",
+          "html_url": "https://shop.pagerduty.com/incidents/Q0000000001043",
+          "_routing_key": "R01CHECKOUT000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "trigger without dedup_key pages every time",
+      "calls": [
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "trigger",
+            "payload": {
+              "summary": "s",
+              "source": "x",
+              "severity": "warning"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "00000000000000000000000000000001"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "trigger",
+            "payload": {
+              "summary": "s",
+              "source": "x",
+              "severity": "warning"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "00000000000000000000000000000002"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_incidents_list",
+          "args": {
+            "statuses": [
+              "triggered"
+            ],
+            "service_ids": [
+              "PCHECKOUT"
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "incidents": [
+                {
+                  "id": "Q0000000001043",
+                  "type": "incident",
+                  "incident_number": 1043,
+                  "title": "s",
+                  "status": "triggered",
+                  "urgency": "low",
+                  "incident_key": "00000000000000000000000000000001",
+                  "service": {
+                    "id": "PCHECKOUT",
+                    "type": "service_reference"
+                  },
+                  "created_at": "2024-11-15T05:53:22Z",
+                  "last_status_change_at": "2024-11-15T05:53:22Z",
+                  "html_url": "https://shop.pagerduty.com/incidents/Q0000000001043"
+                },
+                {
+                  "id": "Q0000000001044",
+                  "type": "incident",
+                  "incident_number": 1044,
+                  "title": "s",
+                  "status": "triggered",
+                  "urgency": "low",
+                  "incident_key": "00000000000000000000000000000002",
+                  "service": {
+                    "id": "PCHECKOUT",
+                    "type": "service_reference"
+                  },
+                  "created_at": "2024-11-15T05:53:24Z",
+                  "last_status_change_at": "2024-11-15T05:53:24Z",
+                  "html_url": "https://shop.pagerduty.com/incidents/Q0000000001044"
+                }
+              ],
+              "limit": 25,
+              "offset": 0,
+              "more": false,
+              "total": null
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "reusing a resolved key opens a new incident",
+      "calls": [
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "trigger",
+            "dedup_key": "checkout-5xx-2024-11-14",
+            "payload": {
+              "summary": "s",
+              "source": "x",
+              "severity": "warning"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "checkout-5xx-2024-11-14"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_incidents_list",
+          "args": {
+            "incident_key": "checkout-5xx-2024-11-14"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "incidents": [
+                {
+                  "id": "Q0000000001041",
+                  "type": "incident",
+                  "incident_number": 1041,
+                  "title": "Checkout 5xx above 5% for card payments",
+                  "status": "resolved",
+                  "urgency": "high",
+                  "incident_key": "checkout-5xx-2024-11-14",
+                  "service": {
+                    "id": "PCHECKOUT",
+                    "type": "service_reference"
+                  },
+                  "created_at": "2024-11-14T10:00:00Z",
+                  "last_status_change_at": "2024-11-14T10:00:00Z",
+                  "html_url": "https://shop.pagerduty.com/incidents/Q0000000001041"
+                },
+                {
+                  "id": "Q0000000001043",
+                  "type": "incident",
+                  "incident_number": 1043,
+                  "title": "s",
+                  "status": "triggered",
+                  "urgency": "low",
+                  "incident_key": "checkout-5xx-2024-11-14",
+                  "service": {
+                    "id": "PCHECKOUT",
+                    "type": "service_reference"
+                  },
+                  "created_at": "2024-11-15T05:53:21Z",
+                  "last_status_change_at": "2024-11-15T05:53:21Z",
+                  "html_url": "https://shop.pagerduty.com/incidents/Q0000000001043"
+                }
+              ],
+              "limit": 25,
+              "offset": 0,
+              "more": false,
+              "total": null
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "acknowledge, resolve, and dropped events",
+      "calls": [
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01SEARCH00000000000000000000000",
+            "event_action": "acknowledge",
+            "dedup_key": "search-lag"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "search-lag"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01SEARCH00000000000000000000000",
+            "event_action": "acknowledge",
+            "dedup_key": "search-lag"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "search-lag"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01SEARCH00000000000000000000000",
+            "event_action": "resolve",
+            "dedup_key": "search-lag"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "search-lag"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01SEARCH00000000000000000000000",
+            "event_action": "acknowledge",
+            "dedup_key": "search-lag"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "search-lag"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "resolve",
+            "dedup_key": "nothing-open"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "nothing-open"
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/incidents/1/status": "resolved"
+      }
+    },
+    {
+      "name": "routing key must match the alert",
+      "calls": [
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "resolve",
+            "dedup_key": "search-lag"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "search-lag"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_incidents_list",
+          "args": {
+            "incident_key": "search-lag"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "incidents": [
+                {
+                  "id": "Q0000000001042",
+                  "type": "incident",
+                  "incident_number": 1042,
+                  "title": "Search index lagging",
+                  "status": "triggered",
+                  "urgency": "low",
+                  "incident_key": "search-lag",
+                  "service": {
+                    "id": "PSEARCH",
+                    "type": "service_reference"
+                  },
+                  "created_at": "2024-11-15T04:00:00Z",
+                  "last_status_change_at": "2024-11-15T04:00:00Z",
+                  "html_url": "https://shop.pagerduty.com/incidents/Q0000000001042"
+                }
+              ],
+              "limit": 25,
+              "offset": 0,
+              "more": false,
+              "total": null
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "unknown routing key is accepted and dropped",
+      "calls": [
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "Rxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "event_action": "trigger",
+            "dedup_key": "k2",
+            "payload": {
+              "summary": "s",
+              "source": "x",
+              "severity": "warning"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "status": "success",
+              "message": "Event processed",
+              "dedup_key": "k2"
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_incidents_list",
+          "args": {
+            "incident_key": "k2"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "incidents": [],
+              "limit": 25,
+              "offset": 0,
+              "more": false,
+              "total": null
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "invalid events",
+      "calls": [
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "trigger"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_event",
+              "message": "Event object is invalid: payload",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "resolve"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_event",
+              "message": "Event object is invalid: dedup_key",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "R01CHECKOUT000000000000000000000",
+            "event_action": "trigger",
+            "dedup_key": "k3",
+            "payload": {
+              "summary": "s",
+              "source": "x",
+              "severity": "high"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_event",
+              "message": "Event object is invalid: payload.severity",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_events_enqueue",
+          "args": {
+            "routing_key": "short",
+            "event_action": "trigger",
+            "dedup_key": "k3",
+            "payload": {
+              "summary": "s",
+              "source": "x",
+              "severity": "warning"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_event",
+              "message": "Event object is invalid: routing_key",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "pagerduty_incidents_list",
+          "args": {
+            "statuses": [
+              "open"
+            ]
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "2001",
+              "message": "Invalid Input Provided: statuses.0",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}
