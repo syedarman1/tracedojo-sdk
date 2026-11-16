@@ -88,6 +88,15 @@ Ten starter worlds are included — calendar, payments, refunds, CRM, email, fil
 SQL, inventory, subscriptions, webhooks: `npx tracedojo init --template refunds`.
 Or generate a fault matrix from your declared tools: `npx tracedojo matrix`.
 
+## Test an unmodified agent
+
+`tracedojo proxy` runs your agent process as it is, against its real MCP servers
+and model APIs. Point the agent's MCP config at `tracedojo proxy connect <server>`
+and it injects the same tool faults, plus model-API faults (429s, 5xx, timeouts,
+cut or stalled streams), then checks the real state your probe command reads.
+Reports work with `compare`, the CI gate, and the dashboard. See
+[the proxy guide](docs/WORKFLOWS.md#test-an-unmodified-agent-through-the-proxy).
+
 ## Gate pull requests
 
 ```sh
