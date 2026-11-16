@@ -13,6 +13,7 @@
   "files": [
     "dist",
     "templates",
+    "simulations",
     "LICENSE",
     "NOTICE"
   ],
@@ -28,6 +29,10 @@
     "./compare": {
       "types": "./dist/compare.d.ts",
       "default": "./dist/compare.js"
+    },
+    "./simulations": {
+      "types": "./dist/simulations.d.ts",
+      "default": "./dist/simulations.js"
     },
     "./proxy": {
       "types": "./dist/proxy/run.d.ts",
