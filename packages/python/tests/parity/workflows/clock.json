@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "workflow/1",
+  "id": "parity-clock",
+  "title": "Virtual clock behavior",
+  "task": "Wait in virtual time and complete.",
+  "initialState": { "blob": "" },
+  "clock": { "mode": "virtual", "startMs": 1700000000000, "maxTimeMs": 5000 },
+  "checks": [
+    { "id": "done", "label": "Agent completes", "type": "equals", "source": "completion", "path": "/status", "expected": "completed" }
+  ],
+  "scenarios": [
+    { "id": "echo-late", "title": "Echo times out after work", "fault": { "type": "timeout_after", "tool": "echo", "occurrence": 2 } }
+  ]
+}

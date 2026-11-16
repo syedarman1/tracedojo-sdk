@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "workflow/1",
+  "id": "parity-limits",
+  "title": "Limits and protocol violations",
+  "task": "Call echo and complete.",
+  "initialState": { "blob": "" },
+  "checks": [
+    { "id": "done", "label": "Agent completes", "type": "equals", "source": "completion", "path": "/status", "expected": "completed" }
+  ],
+  "scenarios": [
+    { "id": "echo-down", "title": "Echo unavailable", "fault": { "type": "unavailable", "tool": "echo" } }
+  ],
+  "limits": { "maxToolCalls": 8, "maxRepeatedCalls": 2, "timeoutMs": 3000 }
+}

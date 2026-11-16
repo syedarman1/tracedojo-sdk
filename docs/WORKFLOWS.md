@@ -42,6 +42,23 @@ It saves `before.json` and `after.json` in a new directory under `.tracedojo/`.
 Import both in the Workflows page. This scripted demo requires no model key
 or repository checkout.
 
+### Python
+
+The Python SDK in `packages/python` runs the same `workflow.json` files and writes
+the same reports. Its adapter is a `.py` module that defines `tools` and
+`create_agent`; agents are `async def run(self, context)` and await
+`context.call(...)`. Commands, flags, and exit codes match:
+
+```sh
+pip install ./packages/python
+tracedojo demo
+tracedojo test --config dojo/workflow.json --adapter dojo/adapter.py --out .tracedojo/first-report.json
+```
+
+Everything below applies to both SDKs. Reports from either can be imported,
+uploaded, or compared against each other. See `packages/python/README.md` for the
+Python API and the LangGraph adapter.
+
 ## Run, break, and fix the example
 
 The starter is deterministic and makes no paid calls. A no-fault control must

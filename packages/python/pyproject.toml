@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tracedojo"
+version = "0.1.0"
+description = "Controlled tool failures and state assertions for AI agents"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Syed Arman" }]
+requires-python = ">=3.10"
+dependencies = []
+keywords = [
+  "ai-agents",
+  "llm-testing",
+  "chaos-engineering",
+  "prompt-injection",
+  "regression-testing",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Testing",
+  "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+langgraph = ["langchain-core>=1.0", "langgraph>=1.0"]
+
+[project.scripts]
+tracedojo = "tracedojo.cli:main"
+
+[project.urls]
+Homepage = "https://tracedojo.com/docs"
+Repository = "https://github.com/syedarman1/tracedojo-sdk"
+Issues = "https://github.com/syedarman1/tracedojo-sdk/issues"
+
+[dependency-groups]
+dev = ["pytest>=8", "langchain-core>=1.0", "langgraph>=1.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tracedojo"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/tracedojo", "tests", "README.md", "LICENSE", "NOTICE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
