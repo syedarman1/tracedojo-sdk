@@ -1,0 +1,289 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "gmail",
+  "cases": [
+    {
+      "name": "send then find by Message-ID",
+      "calls": [
+        {
+          "tool": "gmail_messages_send",
+          "args": {
+            "to": "a@example.com",
+            "subject": "s",
+            "text": "t",
+            "messageId": "m1@shop.example"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "18c0000000000001",
+              "threadId": "18c0000000000001",
+              "labelIds": [
+                "SENT"
+              ]
+            }
+          }
+        },
+        {
+          "tool": "gmail_messages_list",
+          "args": {
+            "rfc822msgid": "m1@shop.example"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "messages": [
+                {
+                  "id": "18c0000000000001",
+                  "threadId": "18c0000000000001"
+                }
+              ],
+              "resultSizeEstimate": 1
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/messages/2": {
+          "id": "18c0000000000001",
+          "threadId": "18c0000000000001",
+          "labelIds": [
+            "SENT"
+          ],
+          "snippet": "t",
+          "historyId": "9001",
+          "internalDate": "1731650002000",
+          "sizeEstimate": 1024,
+          "payload": {
+            "mimeType": "text/plain",
+            "headers": [
+              {
+                "name": "From",
+                "value": "support@shop.example"
+              },
+              {
+                "name": "To",
+                "value": "a@example.com"
+              },
+              {
+                "name": "Subject",
+                "value": "s"
+              },
+              {
+                "name": "Message-ID",
+                "value": "<m1@shop.example>"
+              }
+            ],
+            "body": {
+              "size": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "sending twice sends two",
+      "calls": [
+        {
+          "tool": "gmail_messages_send",
+          "args": {
+            "to": "a@example.com",
+            "subject": "s",
+            "text": "t"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "18c0000000000001",
+              "threadId": "18c0000000000001",
+              "labelIds": [
+                "SENT"
+              ]
+            }
+          }
+        },
+        {
+          "tool": "gmail_messages_send",
+          "args": {
+            "to": "a@example.com",
+            "subject": "s",
+            "text": "t"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "18c0000000000002",
+              "threadId": "18c0000000000002",
+              "labelIds": [
+                "SENT"
+              ]
+            }
+          }
+        },
+        {
+          "tool": "gmail_messages_list",
+          "args": {
+            "labelId": "SENT"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "messages": [
+                {
+                  "id": "18c0000000000002",
+                  "threadId": "18c0000000000002"
+                },
+                {
+                  "id": "18c0000000000001",
+                  "threadId": "18c0000000000001"
+                }
+              ],
+              "resultSizeEstimate": 2
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "modify is idempotent",
+      "calls": [
+        {
+          "tool": "gmail_messages_modify",
+          "args": {
+            "id": "18c0000000000101",
+            "removeLabelIds": [
+              "UNREAD"
+            ],
+            "addLabelIds": [
+              "STARRED"
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "18c0000000000101",
+              "threadId": "18c0000000000101",
+              "labelIds": [
+                "INBOX",
+                "STARRED"
+              ]
+            }
+          }
+        },
+        {
+          "tool": "gmail_messages_modify",
+          "args": {
+            "id": "18c0000000000101",
+            "removeLabelIds": [
+              "UNREAD"
+            ],
+            "addLabelIds": [
+              "STARRED"
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "18c0000000000101",
+              "threadId": "18c0000000000101",
+              "labelIds": [
+                "INBOX",
+                "STARRED"
+              ]
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/messages/0/labelIds": [
+          "INBOX",
+          "STARRED"
+        ]
+      }
+    },
+    {
+      "name": "empty search omits messages",
+      "calls": [
+        {
+          "tool": "gmail_messages_list",
+          "args": {
+            "rfc822msgid": "none@x.example"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "resultSizeEstimate": 0
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "errors",
+      "calls": [
+        {
+          "tool": "gmail_messages_get",
+          "args": {
+            "id": "nope"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "notFound",
+              "message": "Requested entity was not found.",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "gmail_messages_send",
+          "args": {
+            "to": "not-an-email",
+            "subject": "s",
+            "text": "t"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalidArgument",
+              "message": "Invalid value for to",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "gmail_messages_send",
+          "args": {
+            "to": "a@example.com",
+            "subject": "s",
+            "text": "t",
+            "threadId": "nope"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "notFound",
+              "message": "Requested entity was not found.",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "gmail_messages_modify",
+          "args": {},
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalidArgument",
+              "message": "Invalid value for id",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}
