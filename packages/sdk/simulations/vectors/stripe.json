@@ -1,0 +1,643 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "stripe",
+  "cases": [
+    {
+      "name": "partial refund, then list and read back",
+      "calls": [
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "amount": 500,
+            "reason": "requested_by_customer",
+            "idempotency_key": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "re_000000000000000000000001",
+              "object": "refund",
+              "amount": 500,
+              "balance_transaction": "txn_000000000000000000000001",
+              "charge": "ch_7",
+              "created": 1731650002,
+              "currency": "usd",
+              "metadata": {},
+              "payment_intent": "pi_7",
+              "reason": "requested_by_customer",
+              "receipt_number": null,
+              "source_transfer_reversal": null,
+              "status": "succeeded",
+              "transfer_reversal": null
+            }
+          }
+        },
+        {
+          "tool": "stripe_list_refunds",
+          "args": {
+            "payment_intent": "pi_7"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "object": "list",
+              "data": [
+                {
+                  "id": "re_000000000000000000000001",
+                  "object": "refund",
+                  "amount": 500,
+                  "balance_transaction": "txn_000000000000000000000001",
+                  "charge": "ch_7",
+                  "created": 1731650002,
+                  "currency": "usd",
+                  "metadata": {},
+                  "payment_intent": "pi_7",
+                  "reason": "requested_by_customer",
+                  "receipt_number": null,
+                  "source_transfer_reversal": null,
+                  "status": "succeeded",
+                  "transfer_reversal": null
+                }
+              ],
+              "has_more": false,
+              "url": "/v1/refunds"
+            }
+          }
+        },
+        {
+          "tool": "stripe_retrieve_charge",
+          "args": {
+            "id": "ch_7"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "ch_7",
+              "object": "charge",
+              "amount": 2000,
+              "amount_captured": 2000,
+              "amount_refunded": 500,
+              "captured": true,
+              "created": 1731640000,
+              "currency": "usd",
+              "customer": "cus_7",
+              "livemode": false,
+              "metadata": {
+                "order_id": "order_7"
+              },
+              "paid": true,
+              "payment_intent": "pi_7",
+              "refunded": false,
+              "status": "succeeded"
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/charges/0/amount_refunded": 500,
+        "/charges/0/refunded": false,
+        "/_sim": {
+          "seq": {
+            "refund": 1,
+            "balance_transaction": 1
+          },
+          "idempotency": [
+            {
+              "key": "k1",
+              "request": "[\"stripe_create_refund\",{\"amount\":500,\"payment_intent\":\"pi_7\",\"reason\":\"requested_by_customer\"}]",
+              "response": {
+                "id": "re_000000000000000000000001",
+                "object": "refund",
+                "amount": 500,
+                "balance_transaction": "txn_000000000000000000000001",
+                "charge": "ch_7",
+                "created": 1731650002,
+                "currency": "usd",
+                "metadata": {},
+                "payment_intent": "pi_7",
+                "reason": "requested_by_customer",
+                "receipt_number": null,
+                "source_transfer_reversal": null,
+                "status": "succeeded",
+                "transfer_reversal": null
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "same idempotency key and params replays the first response",
+      "calls": [
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "amount": 500,
+            "idempotency_key": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "re_000000000000000000000001",
+              "object": "refund",
+              "amount": 500,
+              "balance_transaction": "txn_000000000000000000000001",
+              "charge": "ch_7",
+              "created": 1731650002,
+              "currency": "usd",
+              "metadata": {},
+              "payment_intent": "pi_7",
+              "reason": null,
+              "receipt_number": null,
+              "source_transfer_reversal": null,
+              "status": "succeeded",
+              "transfer_reversal": null
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "amount": 500,
+            "idempotency_key": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "re_000000000000000000000001",
+              "object": "refund",
+              "amount": 500,
+              "balance_transaction": "txn_000000000000000000000001",
+              "charge": "ch_7",
+              "created": 1731650002,
+              "currency": "usd",
+              "metadata": {},
+              "payment_intent": "pi_7",
+              "reason": null,
+              "receipt_number": null,
+              "source_transfer_reversal": null,
+              "status": "succeeded",
+              "transfer_reversal": null
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/refunds": [
+          {
+            "id": "re_000000000000000000000001",
+            "object": "refund",
+            "amount": 500,
+            "balance_transaction": "txn_000000000000000000000001",
+            "charge": "ch_7",
+            "created": 1731650002,
+            "currency": "usd",
+            "metadata": {},
+            "payment_intent": "pi_7",
+            "reason": null,
+            "receipt_number": null,
+            "source_transfer_reversal": null,
+            "status": "succeeded",
+            "transfer_reversal": null
+          }
+        ],
+        "/charges/0/amount_refunded": 500
+      }
+    },
+    {
+      "name": "same idempotency key with different params is rejected",
+      "calls": [
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "amount": 500,
+            "idempotency_key": "k1"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "re_000000000000000000000001",
+              "object": "refund",
+              "amount": 500,
+              "balance_transaction": "txn_000000000000000000000001",
+              "charge": "ch_7",
+              "created": 1731650002,
+              "currency": "usd",
+              "metadata": {},
+              "payment_intent": "pi_7",
+              "reason": null,
+              "receipt_number": null,
+              "source_transfer_reversal": null,
+              "status": "succeeded",
+              "transfer_reversal": null
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "amount": 600,
+            "idempotency_key": "k1"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "idempotency_error",
+              "message": "Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than 'k1' if you meant to execute a different request.",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/charges/0/amount_refunded": 500
+      }
+    },
+    {
+      "name": "refund more than remains",
+      "calls": [
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "amount": 2501
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "amount_too_large",
+              "message": "Refund amount ($25.01) is greater than unrefunded amount on charge ($20.00)",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/refunds": []
+      }
+    },
+    {
+      "name": "full refund by charge, then refund again",
+      "calls": [
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "charge": "ch_8"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "re_000000000000000000000001",
+              "object": "refund",
+              "amount": 4500,
+              "balance_transaction": "txn_000000000000000000000001",
+              "charge": "ch_8",
+              "created": 1731650002,
+              "currency": "usd",
+              "metadata": {},
+              "payment_intent": "pi_8",
+              "reason": null,
+              "receipt_number": null,
+              "source_transfer_reversal": null,
+              "status": "succeeded",
+              "transfer_reversal": null
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "charge": "ch_8",
+            "amount": 1
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "charge_already_refunded",
+              "message": "Charge ch_8 has already been refunded.",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/charges/1": {
+          "id": "ch_8",
+          "object": "charge",
+          "amount": 4500,
+          "amount_captured": 4500,
+          "amount_refunded": 4500,
+          "captured": true,
+          "created": 1731640100,
+          "currency": "usd",
+          "customer": "cus_8",
+          "livemode": false,
+          "metadata": {
+            "order_id": "order_8"
+          },
+          "paid": true,
+          "payment_intent": "pi_8",
+          "refunded": true,
+          "status": "succeeded"
+        }
+      }
+    },
+    {
+      "name": "unknown ids",
+      "calls": [
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_404"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "resource_missing",
+              "message": "No such payment_intent: 'pi_404'",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "charge": "ch_404"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "resource_missing",
+              "message": "No such charge: 'ch_404'",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "stripe_retrieve_payment_intent",
+          "args": {
+            "id": "pi_404"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "resource_missing",
+              "message": "No such payment_intent: 'pi_404'",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "input validation",
+      "calls": [
+        {
+          "tool": "stripe_create_refund",
+          "args": {},
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "parameter_missing",
+              "message": "One of the following params should be provided for this request: payment_intent or charge.",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "charge": "ch_7"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "parameters_exclusive",
+              "message": "You may only specify one of these parameters: charge, payment_intent.",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "stripe_retrieve_charge",
+          "args": {},
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "parameter_missing",
+              "message": "Missing required param: id.",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "stripe_retrieve_charge",
+          "args": {
+            "id": "ch_7",
+            "expand": [
+              "balance_transaction"
+            ]
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "parameter_unknown",
+              "message": "Received unknown parameter: expand",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "amount": "5"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_request_error",
+              "message": "Invalid amount: 5",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "payment_intent": "pi_7",
+            "reason": "changed_mind"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_request_error",
+              "message": "Invalid reason: changed_mind",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/refunds": []
+      }
+    },
+    {
+      "name": "list is newest first with has_more",
+      "calls": [
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "charge": "ch_8",
+            "amount": 100
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "re_000000000000000000000001",
+              "object": "refund",
+              "amount": 100,
+              "balance_transaction": "txn_000000000000000000000001",
+              "charge": "ch_8",
+              "created": 1731650002,
+              "currency": "usd",
+              "metadata": {},
+              "payment_intent": "pi_8",
+              "reason": null,
+              "receipt_number": null,
+              "source_transfer_reversal": null,
+              "status": "succeeded",
+              "transfer_reversal": null
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "charge": "ch_8",
+            "amount": 200
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "re_000000000000000000000002",
+              "object": "refund",
+              "amount": 200,
+              "balance_transaction": "txn_000000000000000000000002",
+              "charge": "ch_8",
+              "created": 1731650004,
+              "currency": "usd",
+              "metadata": {},
+              "payment_intent": "pi_8",
+              "reason": null,
+              "receipt_number": null,
+              "source_transfer_reversal": null,
+              "status": "succeeded",
+              "transfer_reversal": null
+            }
+          }
+        },
+        {
+          "tool": "stripe_create_refund",
+          "args": {
+            "charge": "ch_8",
+            "amount": 300
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "re_000000000000000000000003",
+              "object": "refund",
+              "amount": 300,
+              "balance_transaction": "txn_000000000000000000000003",
+              "charge": "ch_8",
+              "created": 1731650006,
+              "currency": "usd",
+              "metadata": {},
+              "payment_intent": "pi_8",
+              "reason": null,
+              "receipt_number": null,
+              "source_transfer_reversal": null,
+              "status": "succeeded",
+              "transfer_reversal": null
+            }
+          }
+        },
+        {
+          "tool": "stripe_list_refunds",
+          "args": {
+            "charge": "ch_8",
+            "limit": 2
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "object": "list",
+              "data": [
+                {
+                  "id": "re_000000000000000000000003",
+                  "object": "refund",
+                  "amount": 300,
+                  "balance_transaction": "txn_000000000000000000000003",
+                  "charge": "ch_8",
+                  "created": 1731650006,
+                  "currency": "usd",
+                  "metadata": {},
+                  "payment_intent": "pi_8",
+                  "reason": null,
+                  "receipt_number": null,
+                  "source_transfer_reversal": null,
+                  "status": "succeeded",
+                  "transfer_reversal": null
+                },
+                {
+                  "id": "re_000000000000000000000002",
+                  "object": "refund",
+                  "amount": 200,
+                  "balance_transaction": "txn_000000000000000000000002",
+                  "charge": "ch_8",
+                  "created": 1731650004,
+                  "currency": "usd",
+                  "metadata": {},
+                  "payment_intent": "pi_8",
+                  "reason": null,
+                  "receipt_number": null,
+                  "source_transfer_reversal": null,
+                  "status": "succeeded",
+                  "transfer_reversal": null
+                }
+              ],
+              "has_more": true,
+              "url": "/v1/refunds"
+            }
+          }
+        },
+        {
+          "tool": "stripe_list_refunds",
+          "args": {
+            "payment_intent": "pi_7"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "object": "list",
+              "data": [],
+              "has_more": false,
+              "url": "/v1/refunds"
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/charges/1/amount_refunded": 600
+      }
+    }
+  ]
+}
