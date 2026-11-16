@@ -187,3 +187,12 @@ def test_booking_template_is_the_javascript_template():
         pytest.skip("Not running from the SDK repository.")
     python_template = Path(__file__).resolve().parents[1] / "src" / "tracedojo" / "templates" / "booking" / "workflow.json"
     assert python_template.read_bytes() == js_template.read_bytes()
+
+
+def test_model_faults_need_the_proxy_runner() -> None:
+    from tracedojo import TracedojoError
+
+    workflow = booking_workflow()
+    workflow["scenarios"] = [{"id": "m", "title": "Rate limited", "fault": {"type": "rate_limited", "target": "model"}}]
+    with pytest.raises(TracedojoError, match="proxy runner"):
+        run_workflow_sync(workflow, booking)

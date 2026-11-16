@@ -357,6 +357,24 @@ def test_workflow_parsing_matches_zod() -> None:
         {**base, "checks": [{"id": "c", "label": "l", "type": "unchanged", "path": ""}] * 2},
         {**base, "task": "x" * 10001},
         {**base, "initialState": []},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "model"}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "server_error", "target": "model", "status": 529, "occurrence": 2, "repeat": 3}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "server_error", "target": "model", "status": 500.0}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "model_timeout", "target": "model", "delayMs": 600000}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "stream_cut", "target": "model", "afterChunks": 0}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "stream_stall", "target": "model", "afterChunks": 1000, "delayMs": 0}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "model", "status": 503}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "server_error", "target": "model", "status": 501}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "model", "afterChunks": 1}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "stream_cut", "target": "model", "delayMs": 5}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "model_timeout", "target": "model", "delayMs": 600001}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "stream_stall", "target": "model", "afterChunks": 1.5}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "tool"}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited"}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "model", "tool": "reserve_slot"}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "model", "occurrence": 100, "repeat": 2}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "model", "repeat": 11}}]},
+        {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "unavailable", "tool": "t", "target": "model"}}]},
         "not a workflow",
     ]
     expected = js({"op": "parse-workflow", "values": variants})
@@ -366,3 +384,72 @@ def test_workflow_parsing_matches_zod() -> None:
         else:
             with pytest.raises(SchemaError):
                 parse_workflow(value)
+
+
+# Model-layer faults are injected only by the JS proxy runner. These batches are real
+# proxy runs against the repository's proxy fixtures and a stand-in model server.
+MODEL_SCENARIOS = [
+    {"id": "rate", "title": "Rate limited", "fault": {"type": "rate_limited", "target": "model"}},
+    {"id": "overloaded", "title": "Overloaded", "fault": {"type": "server_error", "target": "model", "status": 529}},
+    {"id": "slow", "title": "Model timeout", "fault": {"type": "model_timeout", "target": "model", "delayMs": 200}},
+    {"id": "cut", "title": "Stream cut", "fault": {"type": "stream_cut", "target": "model", "afterChunks": 1}},
+    {
+        "id": "stall",
+        "title": "Stream stall",
+        "fault": {"type": "stream_stall", "target": "model", "afterChunks": 1, "delayMs": 200},
+    },
+]
+_proxy: dict[int, dict[str, Any]] = {}
+
+
+def proxy_batch(retries: int) -> dict[str, Any]:
+    if retries not in _proxy:
+        _proxy[retries] = js({"op": "proxy-model", "scenarios": MODEL_SCENARIOS, "retries": retries, "version": "1"})
+    return _proxy[retries]
+
+
+def test_model_fault_reports_round_trip() -> None:
+    recovering, failing = proxy_batch(3), proxy_batch(0)
+    for batch in (recovering, failing):
+        assert [r["scenario"]["fault"]["type"] for r in batch["runs"]] == [s["fault"]["type"] for s in MODEL_SCENARIOS]
+        assert all(r["fault"]["triggered"] for r in batch["runs"])
+        assert stable_json(parse_batch(batch)) == stable_json(batch)
+        assert stable_json(parse_batch(loads(dumps(parse_batch(batch))))) == stable_json(batch)
+        assert dumps(parse_workflow_reports(batch), 2) == dumps(js({"op": "parse-reports", "value": batch}), 2)
+        assert dumps(sanitize_batch(batch), 2) == dumps(js({"op": "sanitize-batch", "value": batch}), 2)
+        expected = js({"op": "summary", "value": batch})
+        assert workflow_summary(batch) == expected["summary"]
+        assert tracedojo.workflow_exit_code(batch) == expected["exitCode"]
+    assert {r["status"] for r in recovering["runs"]} == {"passed"}
+    assert "failed" in {r["status"] for r in failing["runs"]}
+    # Python-parsed batches stay valid for the JS schema.
+    verdicts = js({"op": "validate-batch", "values": [parse_batch(recovering), parse_batch(failing)]})
+    assert all(v["ok"] for v in verdicts)
+
+
+def test_ci_gate_compares_model_fault_batches() -> None:
+    recovering, failing = proxy_batch(3), proxy_batch(0)
+    pairs = [(recovering, failing), (failing, recovering), (recovering, recovering)]
+    javascript = js({"op": "compare", "pairs": [list(pair) for pair in pairs]})
+    assert [r["result"]["status"] for r in javascript][:2] == ["regressed", "no_regressions"]
+    for (base, candidate), expected in zip(pairs, javascript):
+        result = compare_workflow_batches(base, candidate)
+        assert result == expected["result"]
+        assert comparison_summary(result) == expected["summary"]
+
+
+def test_tampered_model_fault_reports_are_rejected_by_both() -> None:
+    tampered = []
+    for edit in (
+        lambda b: b["runs"][1]["scenario"]["fault"].update(status=501),
+        lambda b: b["runs"][0]["scenario"]["fault"].update(afterChunks=1),
+        lambda b: b["runs"][0]["scenario"]["fault"].update(tool="reserve_slot"),
+        lambda b: b["runs"][0]["scenario"]["fault"].update(target="tool"),
+    ):
+        batch = copy.deepcopy(proxy_batch(3))
+        edit(batch)
+        tampered.append(batch)
+    assert not any(v["ok"] for v in js({"op": "validate-batch", "values": tampered}))
+    for batch in tampered:
+        with pytest.raises(SchemaError):
+            parse_batch(batch)

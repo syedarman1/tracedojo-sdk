@@ -28,6 +28,8 @@ from ._json import (
 __all__ = [
     "SchemaError",
     "FAULT_TYPES",
+    "MODEL_FAULT_TYPES",
+    "is_model_fault",
     "parse_workflow",
     "parse_fault",
     "parse_checks",
@@ -74,6 +76,16 @@ FAULT_TYPES = (
     "duplicate_delivery",
     "stale_read",
 )
+# Model-layer faults are injected by the proxy runner between an agent and its
+# model API. They target every proxied model request, not a named tool.
+MODEL_FAULT_TYPES = (
+    "rate_limited",
+    "server_error",
+    "model_timeout",
+    "stream_cut",
+    "stream_stall",
+)
+MODEL_FAULT_STATUSES = (500, 502, 503, 504, 529)
 ISSUES = (
     "agent_error",
     "tool_contract",
@@ -225,6 +237,8 @@ def parse_fault(value: object) -> dict[str, Any]:
             _fail("Injected data exceeds the size or depth limit.")
     elif kind in FAULT_TYPES:
         data = _strict(value, ("type", "tool"), ("occurrence", "repeat"))
+    elif kind in MODEL_FAULT_TYPES:
+        return _model_fault(value)
     else:
         return _fail()
     fault: dict[str, Any] = {
@@ -240,6 +254,42 @@ def parse_fault(value: object) -> dict[str, Any]:
     ):
         _fail("Invalid fault schedule.")
     return fault
+
+
+def _model_fault(value: object) -> dict[str, Any]:
+    data = _strict(value, ("type", "target"), ("occurrence", "repeat", "status", "afterChunks", "delayMs"))
+    kind = data["type"]
+    fault: dict[str, Any] = {
+        "type": kind,
+        "target": _literal(data["target"], "model"),
+        "occurrence": _int(data.get("occurrence", 1), 1, 100),
+        "repeat": _int(data.get("repeat", 1), 1, 10),
+    }
+    if "status" in data:
+        # HTTP status for server_error: 500, 502, 503, 504, or 529 (default 503).
+        status = data["status"]
+        if not is_integer(status) or int(status) not in MODEL_FAULT_STATUSES:
+            _fail()
+        fault["status"] = int(status)
+    if "afterChunks" in data:
+        # Stream events forwarded before stream_cut or stream_stall (default 1).
+        fault["afterChunks"] = _int(data["afterChunks"], 0, 1000)
+    if "delayMs" in data:
+        # How long model_timeout and stream_stall hold the connection open (default 10000).
+        fault["delayMs"] = _int(data["delayMs"], 0, 600000)
+    if (
+        fault["occurrence"] + fault["repeat"] - 1 > 100
+        or ("status" in fault and kind != "server_error")
+        or ("afterChunks" in fault and kind not in ("stream_cut", "stream_stall"))
+        or ("delayMs" in fault and kind not in ("model_timeout", "stream_stall"))
+    ):
+        _fail("Invalid fault schedule.")
+    return fault
+
+
+def is_model_fault(fault: dict[str, Any]) -> bool:
+    """True for proxy-only faults that target the model API instead of a tool."""
+    return "target" in fault
 
 
 def parse_check(value: object) -> dict[str, Any]:

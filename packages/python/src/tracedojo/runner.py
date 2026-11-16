@@ -28,6 +28,7 @@ from .schema import (
     evaluate_checks,
     expected_status,
     is_commit_sha,
+    is_model_fault,
     is_name,
     parse_batch,
     parse_completion,
@@ -300,7 +301,7 @@ class _Trial:
         definition = self.tools.get(tool)
         fault = self.fault
         kind = fault["type"]
-        matches = kind != "none" and tool == fault["tool"]
+        matches = "tool" in fault and tool == fault["tool"]
         if matches:
             self.occurrences += 1
         target = (
@@ -692,6 +693,10 @@ async def run_workflow(
     tools = _normalize_tools(_get(adapter, "tools"))
     for scenario in workflow["scenarios"]:
         fault = scenario["fault"]
+        if is_model_fault(fault):
+            raise TracedojoError(
+                "Model faults need the proxy runner (npx tracedojo proxy); run_workflow injects tool faults only."
+            )
         target = tools.get(fault["tool"])
         if target is None or (
             (fault["type"] in ("permission_revoked", "duplicate_delivery") and target.kind != "write")

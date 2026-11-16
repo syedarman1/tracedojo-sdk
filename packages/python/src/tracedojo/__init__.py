@@ -20,6 +20,7 @@ from .runner import (
 from .schema import (
     SchemaError,
     evaluate_checks,
+    is_model_fault,
     parse_batch,
     parse_report,
     parse_workflow,
@@ -45,6 +46,7 @@ __all__ = [
     "bounded_json",
     "dumps",
     "evaluate_checks",
+    "is_model_fault",
     "loads",
     "parse_batch",
     "parse_report",

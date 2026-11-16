@@ -105,6 +105,12 @@ with `occurrence` and `repeat`. Checks: `count`, `equals` (state or completion),
 `unchanged`, `forbidden_tool`, `tool_calls`, `tool_order`. Semantics, limits, and
 statuses are identical to the JavaScript SDK.
 
+Model faults (`rate_limited`, `server_error`, `model_timeout`, `stream_cut`,
+`stream_stall`, with `target: "model"`) sit between an agent process and its model
+API, so only the JavaScript proxy runner (`npx tracedojo proxy`) injects them.
+`run_workflow` rejects them, as the JavaScript `runWorkflow` does. The Python SDK
+reads, validates, compares, summarizes, and uploads proxy reports that contain them.
+
 ### The agent context
 
 | Member | Purpose |
