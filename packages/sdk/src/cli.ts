@@ -15,6 +15,7 @@ import {
   commitShaSchema,
 } from './schema.js';
 import { sanitizeWorkflowBatch } from './privacy.js';
+import { parseProxyConfig } from './proxy/config.js';
 import { importLangSmithTrace } from './langsmith.js';
 import { uploadMessage, uploadWorkflowReports } from './upload.js';
 import { createStarter } from './starter.js';
@@ -24,6 +25,11 @@ import { starterWorlds } from './worlds.js';
 import { createLangSmithStarter } from './langsmith-starter.js';
 import { writeFaultMatrix, testFaultMatrix } from './matrix-cli.js';
 import type { MatrixOptions } from './matrix.js';
+import {
+  connectStdio,
+  DEFAULT_PROXY_PORT,
+  runProxy,
+} from './proxy/run.js';
 import {
   compareWorkflowBatches,
   comparisonExitCode,
@@ -42,6 +48,8 @@ const help = `TraceDojo — test your agent against controlled tool failures
   tracedojo matrix --tools reserve_slot --faults timeout_after,duplicate_delivery --out dojo/matrix.json
   tracedojo test-matrix dojo/matrix.json --adapter dojo/adapter.mjs --out matrix-reports
   tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs --out dojo-report.json
+  tracedojo proxy --config dojo/proxy.json --out proxy-report.json
+  tracedojo proxy connect booking
   tracedojo compare --base main-report.json --candidate pr-report.json --out comparison.json --summary comparison.md
   tracedojo import-langsmith trace.json --out imported-dojo
   tracedojo import-langsmith trace.json --draft-only --out trace-draft.json
@@ -55,6 +63,16 @@ test runs a no-fault control followed by every configured scenario.
            Default: .tracedojo/reports/<unique-id>.json
   --summary  Optional new Markdown summary file for CI
   --commit   Full lowercase Git SHA to label test/test-matrix reports for trends
+
+proxy tests an unmodified agent process against its real MCP servers and model
+APIs. It starts the agent once per trial, injects the scenario's fault into MCP
+tool calls or model requests, and reads real state with your probe command.
+  --config  proxy/1 file (default dojo/proxy.json); --trials, --out, --summary,
+            --commit as for test; --port local listener (default 7357)
+proxy connect <server> is the MCP server command to put in your agent's MCP
+config; it pipes stdio to the running proxy. HTTP MCP clients can use
+http://127.0.0.1:<port>/mcp/<server> instead. Model SDKs read OPENAI_BASE_URL
+and ANTHROPIC_BASE_URL, which the proxy sets for the agent process.
 
 matrix reads declared tool kinds and generates editable suites without running an agent.
   --config  Task, starting state, checks, and optional existing scenarios
@@ -111,6 +129,7 @@ async function main() {
       tools: { type: 'string' },
       faults: { type: 'string' },
       commit: { type: 'string' },
+      port: { type: 'string' },
     },
   });
   const command = positionals[0];
@@ -190,6 +209,20 @@ async function main() {
         process.removeListener('SIGTERM', cancel);
       }
     }
+    return;
+  }
+  if (command === 'proxy' && positionals[1] === 'connect') {
+    if (
+      positionals.length !== 3 ||
+      Object.keys(values).some((key) => key !== 'port')
+    )
+      throw new Error('Use: tracedojo proxy connect <server> [--port 7357]');
+    const port = Number(
+      values.port ?? process.env.TRACEDOJO_PROXY_PORT ?? DEFAULT_PROXY_PORT,
+    );
+    if (!Number.isInteger(port) || port < 1 || port > 65535)
+      throw new Error('--port must be from 1 to 65535.');
+    process.exitCode = await connectStdio(positionals[2]!, port);
     return;
   }
   if (command === 'upload') {
@@ -284,6 +317,8 @@ async function main() {
   const allowed =
     command === 'test'
       ? ['config', 'adapter', 'out', 'trials', 'summary', 'commit']
+      : command === 'proxy'
+        ? ['config', 'out', 'trials', 'summary', 'commit', 'port']
       : command === 'init'
         ? ['out', 'ci', 'template', 'virtual-time']
         : command === 'templates'
@@ -335,7 +370,7 @@ async function main() {
     );
     return;
   }
-  if (!['test', 'import-langsmith'].includes(command))
+  if (!['test', 'proxy', 'import-langsmith'].includes(command))
     throw new Error('Unknown command. See --help.');
   if (!values.out && command === 'import-langsmith')
     throw new Error(
@@ -352,7 +387,20 @@ async function main() {
     return;
   }
   let workflow;
+  let proxyConfig: unknown;
   const trials = Number(values.trials ?? 1);
+  if (command === 'proxy') {
+    if (values.commit !== undefined) commitShaSchema.parse(values.commit);
+    values.config ??= 'dojo/proxy.json';
+    proxyConfig = parseProxyConfig(await readJson(resolve(values.config)));
+    if (!Number.isInteger(trials) || trials < 1 || trials > 20)
+      throw new Error('--trials must be from 1 to 20.');
+    if (
+      values.port !== undefined &&
+      !/^\d{1,5}$/.test(values.port)
+    )
+      throw new Error('--port must be a number.');
+  }
   if (command === 'test') {
     if (values.commit !== undefined) commitShaSchema.parse(values.commit);
     values.config ??= 'dojo/workflow.json';
@@ -392,6 +440,34 @@ async function main() {
       console.log(
         `Saved a review draft with ${draft.observedCalls.length} observed tool calls. Supply starting state, tools, and checks before running.`,
       );
+      return;
+    }
+    if (command === 'proxy') {
+      const batch = sanitizeWorkflowBatch(
+        await runProxy(proxyConfig, {
+          configDir: dirname(resolve(values.config!)),
+          trials,
+          signal: controller.signal,
+          commitSha: values.commit,
+          ...(values.port !== undefined ? { port: Number(values.port) } : {}),
+          onListening: (port) =>
+            console.log(`Proxy listening on http://127.0.0.1:${port}`),
+        }),
+      );
+      await output.writeFile(JSON.stringify(batch, null, 2) + '\n');
+      saved = true;
+      if (summaryOutput) await summaryOutput.writeFile(workflowSummary(batch));
+      console.log(`Control: ${batch.baseline.status}`);
+      for (const run of batch.runs) {
+        console.log(`${run.scenario.title}: ${run.status}`);
+        for (const check of run.assertions.filter((c) => !c.passed))
+          console.log(`  ${check.label}: ${check.detail}`);
+      }
+      if (batch.skippedReason) console.log(batch.skippedReason);
+      console.log(
+        `Completed ${batch.runs.length}/${batch.planned} fault trials. Report: ${destination}`,
+      );
+      process.exitCode = workflowExitCode(batch);
       return;
     }
     let adapter: WorkflowAdapter;

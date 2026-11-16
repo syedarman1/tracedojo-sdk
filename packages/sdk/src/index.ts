@@ -8,6 +8,7 @@ import {
   completionSchema,
   commitShaSchema,
   evaluateChecks,
+  isModelFault,
   parseWorkflow,
   resultSchema,
   stableJson,
@@ -178,7 +179,7 @@ async function trial(
     const definition = Object.hasOwn(adapter.tools, tool)
       ? adapter.tools[tool]
       : undefined;
-    const matches = fault.type !== 'none' && tool === fault.tool;
+    const matches = 'tool' in fault && tool === fault.tool;
     if (matches) occurrences++;
     const target =
       matches &&
@@ -548,6 +549,10 @@ export async function runWorkflow(
       );
   for (const scenario of workflow.scenarios) {
     const f = scenario.fault;
+    if (isModelFault(f))
+      throw new Error(
+        'Model faults need the proxy runner (tracedojo proxy); runWorkflow injects tool faults only.',
+      );
     if (
       f.type !== 'none' &&
       (!Object.hasOwn(adapter.tools, f.tool) ||

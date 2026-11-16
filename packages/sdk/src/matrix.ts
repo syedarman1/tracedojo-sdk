@@ -91,7 +91,7 @@ export const workflowMatrixSchema = z
       matrix.suites.some((suite) =>
         suite.workflow.scenarios.some(
           ({ fault }) =>
-            fault.type === 'none' ||
+            !('tool' in fault) ||
             fault.tool !== suite.tool ||
             (['duplicate_delivery', 'permission_revoked'].includes(
               fault.type,

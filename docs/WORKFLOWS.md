@@ -124,6 +124,138 @@ and independent outcome checks; recorded outputs are not correctness guarantees.
 Model requests use your provider account and may incur charges. Start with one
 control and one fault, inspect the resulting evidence, then expand the suite.
 
+## Test an unmodified agent through the proxy
+
+`tracedojo proxy` tests an agent process as it is, without `context.call`. It sits
+between the agent and its real MCP servers and model APIs, injects the scenario's
+fault, and reads the real application state with a command you provide. Its
+reports are ordinary workflow batches, so `compare`, the CI gate, `upload`, and
+the dashboard read them like `test` reports.
+
+```sh
+npx --no-install tracedojo proxy --config dojo/proxy.json --out .tracedojo/proxy-report.json
+```
+
+Each trial runs `state.reset`, reads the starting state with `state.probe`, starts
+the agent command, and waits for it to exit. The no-fault control runs first;
+fault trials are skipped if it fails, and an unreached fault is inconclusive,
+exactly as with `test`. `--trials`, `--summary`, and `--commit` work as they do
+for `test`. If a reset does not restore the control's starting state, the
+remaining trials are skipped instead of compared under different conditions.
+
+### Proxy configuration
+
+`proxy.json` uses the workflow fields you already know (`id`, `title`, `task`,
+`checks`, `scenarios`, `limits`) without `initialState`, which comes from the
+probe. Relative paths and commands resolve against the config file's directory.
+
+```json
+{
+  "schemaVersion": "proxy/1",
+  "id": "booking",
+  "title": "Book one slot",
+  "task": "Book slot_42 for customer_7.",
+  "agent": { "id": "booking-agent", "version": "1", "command": ["node", "agent.mjs"] },
+  "servers": {
+    "booking": { "command": ["node", "booking-server.mjs"], "env": { "DB_URL": "${TEST_DB_URL}" } },
+    "github": { "url": "https://mcp.example.com/mcp", "headers": { "Authorization": "Bearer ${MCP_TOKEN}" } }
+  },
+  "tools": { "reserve_slot": "write", "list_bookings": "read" },
+  "state": { "reset": ["node", "state.mjs", "reset"], "probe": ["node", "state.mjs", "dump"] },
+  "model": { "openai": "https://api.openai.com", "anthropic": "https://api.anthropic.com" },
+  "checks": [{ "id": "one", "label": "One booking", "type": "count", "path": "/bookings", "expected": 1 }],
+  "scenarios": [
+    { "id": "lost-confirmation", "title": "Lost confirmation", "fault": { "type": "timeout_after", "tool": "reserve_slot" } },
+    { "id": "rate-limit", "title": "Model rate limit", "fault": { "type": "rate_limited", "target": "model" } }
+  ],
+  "limits": { "maxToolCalls": 20, "maxRepeatedCalls": 5, "maxModelCalls": 50, "timeoutMs": 120000 }
+}
+```
+
+`${NAME}` in `env` and `headers` values is read from your environment and never
+written to reports. Commands are argument arrays and run without a shell.
+`state.probe` must print one JSON object of at most 100 KB: the state your checks
+inspect. Point it, the reset command, and the MCP servers at a test database or
+sandbox account, never production. `timeoutMs` allows up to 30 minutes per trial.
+
+### Connect the agent
+
+The agent's own code does not change. Its configuration does:
+
+- **MCP over stdio:** replace the server's command in the agent's MCP config with
+  `npx --no-install tracedojo proxy connect booking`. The proxy starts the real
+  server from `servers.booking` for each connection.
+- **MCP over HTTP:** use `http://127.0.0.1:7357/mcp/booking`. This endpoint answers
+  requests with JSON; server-initiated requests and GET event streams are not
+  relayed, so use stdio for servers that need them.
+- **Model APIs:** the agent process receives `OPENAI_BASE_URL`
+  (`http://127.0.0.1:7357/openai/v1`) and `ANTHROPIC_BASE_URL`
+  (`http://127.0.0.1:7357/anthropic`), which the official SDKs read. Requests and
+  their API keys are forwarded to the `model` origins (by default the public APIs).
+  For another OpenAI-compatible provider, set `model.openai` to its base URL
+  without the trailing `/v1`.
+
+The agent also receives `TRACEDOJO_TASK` and `TRACEDOJO_COMPLETION_FILE`. Writing
+`{ "status": "completed" | "blocked", "message": "...", "output": ... }` to that file
+is optional; without it, exit code 0 is a completed run whose message is the last
+line of standard output, and any other exit code is an `agent_error`. The proxy
+listens only on 127.0.0.1, port 7357 by default (`--port` or `"port"` changes it;
+`proxy connect --port` must match). It rejects requests from other hosts and
+browser origins and accepts connections only while a trial is running.
+
+### What the proxy injects
+
+Tool faults use the same names, schedules, and evidence events as `test`, applied
+to real MCP `tools/call` requests:
+
+| Fault | What the agent sees | What reaches the server |
+| --- | --- | --- |
+| `timeout_before`, `unavailable` | An `isError` result (`TIMEOUT` or `SERVICE_UNAVAILABLE`) | Nothing |
+| `timeout_after` | A `TIMEOUT` error result | The call, which may commit |
+| `malformed` | The response text cut in half | The call |
+| `prompt_injection` | `replacement` as the result text | The call |
+| `permission_revoked` | `PERMISSION_DENIED` for this and every later call to the tool | Nothing after revocation |
+| `duplicate_delivery` | The first response | The call twice, sequentially |
+| `stale_read` | The first successful result for the same arguments | The call |
+
+Tool kinds come from `tools`, then the server's `readOnlyHint` annotation, else
+write. Permission revocation and duplicate delivery need a declared write tool;
+stale reads need a declared read tool. Tool names outside letters, digits, `_`,
+and `-` are recorded with `_` in their place.
+
+The proxy probes state before and after every tool call and serializes calls, so
+each `mutation` event carries the real before/after state and the call that caused
+it. A change between calls is recorded as a mutation outside proxied tool calls.
+A read tool that changes state makes the run inconclusive (`tool_contract`), as
+does an MCP server that exits during a call or a probe that fails.
+
+Model faults use `"target": "model"` instead of `tool`, and count every POST to
+either model endpoint:
+
+| Fault | Behavior |
+| --- | --- |
+| `rate_limited` | 429 with `retry-after: 1` and a provider-shaped error body |
+| `server_error` | `status` 500, 502, 503 (default), 504, or 529, with a provider-shaped body |
+| `model_timeout` | No response; the connection drops after `delayMs` (default 10000) |
+| `stream_cut` | Forwards `afterChunks` server-sent events (default 1), then drops the connection |
+| `stream_stall` | Forwards `afterChunks` events, goes silent for `delayMs`, then drops the connection |
+
+A stream that ends before `afterChunks` events is passed through untouched and
+does not count as triggered. A non-streaming response is cut halfway. Each model
+request is recorded as an evaluator-only `model` event with the provider, method,
+path, model name, stream flag, and status. Headers, keys, prompts, and completions
+are never recorded. Model faults require the proxy; `runWorkflow` and `test`
+reject them.
+
+### Limits
+
+The proxy tests real services, so isolation is your reset command's job. Model
+requests are real and billed. The agent and MCP servers are trusted local
+processes; the trial deadline kills the agent's process group but is not a
+sandbox. Reports from model-fault scenarios need an SDK version that includes the
+model fault types to validate them; tool-fault proxy reports use the existing
+schema unchanged.
+
 ## Track scenarios across commits
 
 Label a test with the full lowercase Git commit SHA:

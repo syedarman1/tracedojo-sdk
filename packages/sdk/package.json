@@ -29,6 +29,10 @@
       "types": "./dist/compare.d.ts",
       "default": "./dist/compare.js"
     },
+    "./proxy": {
+      "types": "./dist/proxy/run.d.ts",
+      "default": "./dist/proxy/run.js"
+    },
     "./cli": "./dist/cli.js",
     ".": {
       "types": "./dist/index.d.ts",
