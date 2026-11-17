@@ -18,7 +18,7 @@ actually changed in your application's state, not what the agent claimed.
 No API key, no account. Node.js 22.23.1 or later.
 
 ```sh
-npx tracedojo@0.1.6 demo
+npx tracedojo@0.1.7 demo
 ```
 
 ```text
@@ -79,7 +79,7 @@ inconclusive, not as passes.
 Then:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.2
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.3
 npx tracedojo init            # starter adapter + workflow
 npx tracedojo test --trials 3
 ```

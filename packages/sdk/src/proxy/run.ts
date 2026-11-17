@@ -19,6 +19,7 @@ import {
   commitShaSchema,
   completionSchema,
   stableJson,
+  unreachedFault,
   workflowBatchSchema,
   type Json,
   type State,
@@ -639,7 +640,12 @@ export async function runProxy(
             break outer;
           }
           batch.runs.push(report);
-          if (['inconclusive', 'cancelled', 'timed_out'].includes(report.status)) {
+          // A fault the agent never reached says nothing about the next scenario,
+          // so keep testing. Only an interrupted trial stops the batch.
+          if (
+            ['inconclusive', 'cancelled', 'timed_out'].includes(report.status) &&
+            !unreachedFault(report)
+          ) {
             batch.skippedReason =
               'Stopped after an interrupted or inconclusive trial. Completed evidence was preserved.';
             break outer;

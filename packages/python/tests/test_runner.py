@@ -196,3 +196,15 @@ def test_model_faults_need_the_proxy_runner() -> None:
     workflow["scenarios"] = [{"id": "m", "title": "Rate limited", "fault": {"type": "rate_limited", "target": "model"}}]
     with pytest.raises(TracedojoError, match="proxy runner"):
         run_workflow_sync(workflow, booking)
+
+
+def test_an_unreached_fault_skips_only_its_own_scenario():
+    unreached = copy.deepcopy(booking_workflow()["scenarios"][0])
+    unreached.update(id="unreached", fault={**unreached["fault"], "occurrence": 5})
+    scenarios = [unreached, *booking_workflow()["scenarios"]]
+    batch = run_workflow_sync(workflow(scenarios=scenarios), booking, trials=2)
+    assert "skippedReason" not in batch
+    assert batch["runs"][0]["status"] == "inconclusive"
+    assert not batch["runs"][0]["fault"]["triggered"]
+    assert [r["scenario"]["id"] for r in batch["runs"]] == [s["id"] for s in scenarios for _ in range(2)]
+    assert all(r["fault"]["triggered"] for r in batch["runs"][2:])

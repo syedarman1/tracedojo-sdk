@@ -622,6 +622,13 @@ export const workflowBatchSchema = z
       });
   });
 export type WorkflowBatch = z.infer<typeof workflowBatchSchema>;
+/** True when a trial was inconclusive only because its fault never fired. */
+export function unreachedFault(report: WorkflowReport): boolean {
+  return (
+    report.status === 'inconclusive' && !report.issue && !report.fault.triggered
+  );
+}
+
 export function workflowExitCode(batch: WorkflowBatch): 0 | 1 | 3 {
   if (
     batch.skippedReason ||

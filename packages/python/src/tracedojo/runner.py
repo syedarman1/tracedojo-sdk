@@ -673,7 +673,8 @@ async def run_workflow(
     """Run trusted local agent code against isolated, developer-defined simulated tools.
 
     Runs a no-fault control first. Fault trials run only if the control passes,
-    and stop after an interrupted or inconclusive trial. Returns a
+    continue past faults the agent never reached, and stop after an interrupted
+    trial. Returns a
     ``workflow-batch/1`` dict that validates against the JavaScript SDK's schema.
     """
     workflow = parse_workflow(workflow)
@@ -766,7 +767,10 @@ async def run_workflow(
                     break
                 report = await _Trial(workflow, tools, agent, scenario, fingerprint, execution, signal).run()
                 batch["runs"].append(report)
-                if report["status"] in ("inconclusive", "cancelled", "timed_out"):
+                # A fault the agent never reached says nothing about the next scenario,
+                # so keep testing. Only an interrupted trial stops the batch.
+                unreached = report["status"] == "inconclusive" and not report.get("issue") and not report["fault"]["triggered"]
+                if report["status"] in ("inconclusive", "cancelled", "timed_out") and not unreached:
                     batch["skippedReason"] = (
                         "Stopped after an interrupted or inconclusive trial. Completed evidence was preserved."
                     )
