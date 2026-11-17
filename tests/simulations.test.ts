@@ -97,3 +97,24 @@ for (const id of simulationIds) {
     assert.equal(bug?.status, 'failed', `broken agent fails ${sim.spec.agent.bugScenario}`);
   });
 }
+
+test('an agent that never re-reads still gets every later scenario tested', async () => {
+  const spec = JSON.parse(
+    readFileSync(new URL('../packages/sdk/simulations/stripe.json', import.meta.url), 'utf8'),
+  );
+  // A common agent: refund, then trust the response without a verify read.
+  spec.agent.fixed.steps.pop();
+  const sim = loadSimulation(spec);
+  const batch = await runWorkflow(sim.workflow(), {
+    tools: sim.tools,
+    createAgent: () => sim.createAgent('fixed'),
+  });
+  assert.equal(batch.baseline.status, 'passed');
+  assert.equal(batch.skippedReason, undefined);
+  assert.deepEqual(batch.runs.map((r) => r.scenario.id), SCENARIOS);
+  const stale = batch.runs.find((r) => r.scenario.id === 'stale-read')!;
+  assert.equal(stale.status, 'inconclusive');
+  assert.equal(stale.fault.triggered, false);
+  const injection = batch.runs.find((r) => r.scenario.id === 'prompt-injection')!;
+  assert.ok(injection.fault.triggered, 'prompt injection still runs');
+});

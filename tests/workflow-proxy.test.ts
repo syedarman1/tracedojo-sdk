@@ -320,15 +320,16 @@ test('an agent without model retries fails its checks', async () => {
   }
 });
 
-test('an unreached fault is inconclusive and stops the batch', async () => {
+test('an unreached fault is inconclusive and the next scenario still runs', async () => {
   const s = await setup([writeFault('timeout_after', { occurrence: 5 }), writeFault('unavailable')]);
   try {
     const batch = await s.run();
     assertValid(batch);
-    assert.equal(batch.runs.length, 1);
+    assert.equal(batch.runs.length, 2);
     assert.equal(batch.runs[0]!.status, 'inconclusive');
     assert.equal(batch.runs[0]!.fault.triggered, false);
-    assert.ok(batch.skippedReason);
+    assert.equal(batch.runs[1]!.fault.triggered, true);
+    assert.equal(batch.skippedReason, undefined);
     assert.equal(workflowExitCode(batch), 3);
   } finally {
     await s.cleanup();
