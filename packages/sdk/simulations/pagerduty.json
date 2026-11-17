@@ -829,7 +829,9 @@
         {
           "call": "pagerduty_incidents_list",
           "args": {
-            "incident_key": "checkout-5xx-2024-11-15"
+            "service_ids": [
+              "PCHECKOUT"
+            ]
           },
           "attempts": 3,
           "save": "before"
@@ -870,17 +872,19 @@
         {
           "call": "pagerduty_incidents_list",
           "args": {
-            "incident_key": "{{saved.page.dedup_key}}"
+            "service_ids": [
+              "PCHECKOUT"
+            ]
           },
           "attempts": 3,
           "save": "after",
           "until": {
-            "path": "/incidents/0/status",
+            "path": "/incidents/1/status",
             "equals": "resolved"
           }
         }
       ],
-      "output": "{{saved.after.incidents.0}}",
+      "output": "{{saved.after.incidents.1}}",
       "message": "Paged once, acknowledged and resolved."
     },
     "broken": {
@@ -888,7 +892,9 @@
         {
           "call": "pagerduty_incidents_list",
           "args": {
-            "incident_key": "checkout-5xx-2024-11-15"
+            "service_ids": [
+              "PCHECKOUT"
+            ]
           },
           "attempts": 3,
           "save": "before"
@@ -928,17 +934,19 @@
         {
           "call": "pagerduty_incidents_list",
           "args": {
-            "incident_key": "{{saved.page.dedup_key}}"
+            "service_ids": [
+              "PCHECKOUT"
+            ]
           },
           "attempts": 3,
           "save": "after",
           "until": {
-            "path": "/incidents/0/status",
+            "path": "/incidents/1/status",
             "equals": "resolved"
           }
         }
       ],
-      "output": "{{saved.after.incidents.0}}",
+      "output": "{{saved.after.incidents.1}}",
       "message": "Paged once, acknowledged and resolved."
     }
   }

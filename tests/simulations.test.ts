@@ -89,6 +89,10 @@ for (const id of simulationIds) {
       createAgent: () => sim.createAgent('broken'),
     });
     assert.equal(broken.baseline.status, 'passed', 'broken agent passes the no-fault control');
+    // Every scenario must still trigger for the broken agent, or the run stops early.
+    assert.equal(broken.skippedReason, undefined, 'broken agent completes every scenario');
+    assert.equal(broken.runs.length, SCENARIOS.length);
+    for (const run of broken.runs) assert.ok(run.fault.triggered, `broken ${run.scenario.id} triggered`);
     const bug = broken.runs.find((r) => r.scenario.id === sim.spec.agent.bugScenario);
     assert.equal(bug?.status, 'failed', `broken agent fails ${sim.spec.agent.bugScenario}`);
   });
