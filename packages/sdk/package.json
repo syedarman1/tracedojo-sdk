@@ -1,6 +1,6 @@
 {
   "name": "@tracedojo/sdk",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Controlled tool failures and state assertions for AI agents",
   "license": "Apache-2.0",
   "author": "Syed Arman",
