@@ -44,20 +44,26 @@ or repository checkout.
 
 ### Python
 
-The Python SDK in `packages/python` runs the same `workflow.json` files and writes
-the same reports. Its adapter is a `.py` module that defines `tools` and
-`create_agent`; agents are `async def run(self, context)` and await
-`context.call(...)`. Commands, flags, and exit codes match:
+The Python SDK runs the same `workflow.json` files and writes the same reports.
+Its adapter is a `.py` module that defines `tools` and `create_agent`; agents are
+`async def run(self, context)` and await `context.call(...)`.
+
+The Python CLI has `demo`, `test`, `compare`, and `upload`, with the same flags and
+exit codes as the JavaScript CLI. It has no `init`, so copy the bundled booking
+example to get started:
 
 ```sh
 pip install tracedojo
 tracedojo demo
+cp -r "$(python -c 'import os, tracedojo.templates.booking as t; print(os.path.dirname(t.__file__))')" dojo
 tracedojo test --config dojo/workflow.json --adapter dojo/adapter.py --out .tracedojo/first-report.json
 ```
 
-Everything below applies to both SDKs. Reports from either can be imported,
-uploaded, or compared against each other. See `packages/python/README.md` for the
-Python API and the LangGraph adapter.
+`init`, the service simulations, `matrix`, and `proxy` are JavaScript only for now.
+A Python agent can still use `proxy`, which runs any agent command. Reports from
+either SDK can be imported, uploaded, or compared against each other. The
+[Python SDK README](https://github.com/syedarman1/tracedojo-sdk/tree/main/packages/python#readme)
+covers the Python API and the LangGraph adapter.
 
 ## Run, break, and fix the example
 
@@ -79,7 +85,8 @@ before execution, service unavailability, malformed response, and revoked access
 Default report names are unique under `.tracedojo/reports/`. Explicit `--out` and
 `--summary` destinations must be new; collisions are rejected before loading the
 agent. Exit codes are 0 passed, 1 failed checks, 2 invalid input/setup, and 3
-incomplete evidence. A fault the agent never reaches is inconclusive.
+incomplete evidence. A fault the agent never reaches is inconclusive, and the
+remaining scenarios still run.
 
 ## Connect your agent
 
@@ -155,8 +162,8 @@ npx --no-install tracedojo proxy --config dojo/proxy.json --out .tracedojo/proxy
 
 Each trial runs `state.reset`, reads the starting state with `state.probe`, starts
 the agent command, and waits for it to exit. The no-fault control runs first;
-fault trials are skipped if it fails, and an unreached fault is inconclusive,
-exactly as with `test`. `--trials`, `--summary`, and `--commit` work as they do
+fault trials are skipped if it fails, and an unreached fault is inconclusive
+without stopping the remaining scenarios, exactly as with `test`. `--trials`, `--summary`, and `--commit` work as they do
 for `test`. If a reset does not restore the control's starting state, the
 remaining trials are skipped instead of compared under different conditions.
 

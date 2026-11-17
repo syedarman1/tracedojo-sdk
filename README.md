@@ -34,7 +34,9 @@ The Python SDK lives in [`packages/python`](packages/python). It reads the same
 `workflow.json`, injects the same faults, and writes the same report format, so the
 dashboard, `compare`, and the CI gate accept reports from either language. It is
 on PyPI: `pip install tracedojo`, then run `tracedojo demo`. Python 3.10 or later,
-with a LangGraph adapter (`pip install "tracedojo[langgraph]"`).
+with a LangGraph adapter (`pip install "tracedojo[langgraph]"`). The Python CLI has
+`demo`, `test`, `compare`, and `upload`; `init`, the service simulations, `matrix`,
+and `proxy` are JavaScript only for now.
 
 ## What it catches
 
