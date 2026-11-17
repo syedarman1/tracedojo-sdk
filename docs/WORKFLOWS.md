@@ -555,9 +555,10 @@ payments, refunds, CRM, email, files, SQL, inventory, subscriptions, and webhook
 Each includes five faults and instructions to reproduce a retry bug. These are
 small fixture simulations, not full implementations of external services.
 
-For real service behavior, ten stateful simulations follow each service's response
+For real service behavior, 14 stateful simulations follow each service's response
 shapes, error codes, and idempotency rules: Stripe, Slack, GitHub, Gmail, Google
-Calendar, Postgres, Shopify, Zendesk, Jira, and HubSpot. Start one with
+Calendar, Postgres, Shopify, Zendesk, Jira, HubSpot, Datadog, PagerDuty, Sentry,
+and Salesforce. Start one with
 `npx --no-install tracedojo init --template stripe --out dojo`, or load it in code
 with `loadSimulation('stripe')` from `@tracedojo/sdk/simulations`. Each ships a fixed
 and a broken scripted agent, so you can see the failure before connecting your own.
