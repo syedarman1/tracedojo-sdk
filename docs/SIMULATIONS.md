@@ -1,6 +1,6 @@
 # Tool simulations
 
-Ten stateful, in-memory simulations of real services ship with `@tracedojo/sdk`. Each one keeps
+Fourteen stateful, in-memory simulations of real services ship with `@tracedojo/sdk`. Each one keeps
 state between calls, returns the service's response shapes and error codes, honors the service's
 idempotency rules, and works with every TraceDojo tool fault. None of them call a network or a model.
 
@@ -37,6 +37,10 @@ const agent = stripe.createAgent('fixed');   // scripted reference agent ('fixed
 | `zendesk` | Zendesk Ticketing API v2 | show ticket, list comments / create ticket, update ticket | Reply and solve once | Retries an update that carries a comment, so the customer gets it twice |
 | `jira` | Jira Cloud REST API v3 | search, get issue / create issue, transition, add comment | Open one incident issue | Retries create without searching its label, so it opens two issues |
 | `hubspot` | HubSpot CRM v3 (contacts) | search, get / create, update | Add a lead once | Retries create, gets 409 CONFLICT for the contact it made, reports failure |
+| `datadog` | Datadog Incident Management API v2 | search incidents, get / create, update | Declare and resolve one incident | Retries create without searching its title, so the outage gets two incidents and one stays open |
+| `pagerduty` | PagerDuty Events API v2 + REST incidents | list incidents / enqueue event | Page once, acknowledge and resolve | Triggers without a dedup_key, so a retry pages on-call twice |
+| `sentry` | Sentry API (issues) | get, list issues, list comments / update issue, create comment | Resolve an issue and note it once | Retries a comment without listing comments, so the note appears twice |
+| `salesforce` | Salesforce REST API v62.0 (Contact) | query, get / create, upsert, update | Sync two contacts idempotently | Retries a POST create without querying its external ID, so the contact is duplicated |
 
 Every simulation has the same eight scenarios: lost confirmation, request timeout, temporary
 unavailability, truncated response, revoked permission, duplicate delivery, stale read and prompt
@@ -62,6 +66,10 @@ best guess; the status and the fact that the call fails are what the simulation 
 | `zendesk` | `Idempotency-Key` on ticket create; a different body returns `IdempotentRequestError`. `safe_update` with `updated_stamp` returns 409 when stale | `RecordInvalid`, `RecordNotFound`, `UpdateConflict` (status confirmed, error name not) |
 | `jira` | None; search by label before retrying a create | All Jira error messages and the `bad_request`/`not_found` codes |
 | `hubspot` | None; email is unique, so a repeat create returns 409 `CONFLICT` with the existing id | `VALIDATION_ERROR`, `OBJECT_NOT_FOUND` |
+| `datadog` | None; search for your incident before retrying a create. Resolving twice changes nothing | `not_found` message, `Invalid value for` field errors (docs show only `{"errors": ["Bad Request"]}`) |
+| `pagerduty` | `dedup_key`: a trigger joins the open alert with the same key and routing key; a resolved key opens a new incident; acknowledge and resolve without an open alert are dropped | `invalid_event` (status and message from community reports), REST `2001` input error |
+| `sentry` | None for comments. Issue updates only change the attributes sent, so resolving twice is harmless | All error bodies; the comments endpoint (`/api/0/issues/{id}/comments/`) is not in the public API reference |
+| `salesforce` | Upsert on an external ID field: 201 `created: true`, 200 `created: false`, 300 when several records match | All error messages; the codes (`REQUIRED_FIELD_MISSING`, `DUPLICATE_VALUE`, `NOT_FOUND`, `INVALID_FIELD`, `INVALID_TYPE`) come from Salesforce's docs, the text does not |
 
 Shopify validation problems (`INVALID_REASON`, `INVALID_QUANTITY_NAME`, `INVALID_INVENTORY_ITEM`,
 `CHANGE_FROM_QUANTITY_STALE`, `IDEMPOTENCY_KEY_PARAMETER_MISMATCH`) are GraphQL `userErrors` inside a
@@ -75,7 +83,9 @@ These are deliberate simplifications. Each is also stated in the tool's descript
   simulations use a short name such as `not_found` or `bad_request` and keep the HTTP status.
 - **Structured inputs instead of query languages.** Gmail takes `rfc822msgid` and `labelId` instead of
   a `q` string. Jira takes `project`, `label` and `status` instead of JQL. Postgres takes table,
-  filters and values instead of SQL text. HubSpot search supports `EQ` and `NEQ` only.
+  filters and values instead of SQL text. HubSpot search supports `EQ` and `NEQ` only. Datadog search takes
+  `state` and `severity` lists instead of a query string, Sentry issue lists take `status` instead of a
+  search query, and Salesforce takes `sobject` and `where` filters instead of SOQL.
 - **Gmail send** takes `to`, `subject`, `text` and `messageId` instead of a base64url MIME message.
 - **Postgres** has `pg_select` and `pg_insert` only. There is no update or delete tool yet.
 - **Unknown arguments** are rejected by every simulation, so typos fail loudly. Some real APIs, Slack's
@@ -84,6 +94,12 @@ These are deliberate simplifications. Each is also stated in the tool's descript
   Real Stripe replays some failures too.
 - **Jira** transitions return `{}` for 204 No Content; comments take plain text, not Atlassian Document Format.
 - **Zendesk** update and create return `{ ticket }` without the `audit` object.
+- **Datadog** incidents keep a subset of attributes (no relationships, `included` or `time_to_*` metrics).
+- **PagerDuty** generates zero-padded dedup keys instead of UUIDs, and maps severity critical/error to high
+  urgency and warning/info to low, as a dynamic-urgency service does.
+- **Sentry** issue updates return the whole issue instead of only the changed attributes.
+- **Salesforce** models Contact only and returns timestamps as `2024-11-15T05:53:21Z`, not
+  `2024-11-15T05:53:21.000+0000`. `External_Id__c` is an external ID field that is not unique.
 - **Paging** is not simulated. List and search tools return the first page with no cursor.
 - **Time** is deterministic: each spec has an `epoch`, and the clock moves one second per generated id.
 
@@ -104,7 +120,9 @@ Top-level fields:
   `{ missing, unknown, type }` for one per reason; the error scope gets `field`, `reason` and `value`.
   `idempotency` is `{ arg, conflict }`, where `conflict` is an error name or `{ "return": expr }`.
 - `workflow`: a `workflow/1` workflow without `initialState` (the spec's `state` is used).
-- `agent`: `{ bug, bugScenario, fixed, broken }`, two scripted agents.
+- `agent`: `{ bug, bugScenario, fixed, broken }`, two scripted agents. A step's `beforeRetry.find.where`
+  matches items by top-level key, or by JSON pointer when the key starts with `/` (for example
+  `{ "/attributes/title": "..." }`).
 
 Steps: `let`, `require` (with `error` or `return`), `find` (live reference), `filter` (a copy, with
 `order` and `limit`), `insert`, `update`, `updateWhere`, `deleteWhere`, `if`, `each`, `fail`, `return`.

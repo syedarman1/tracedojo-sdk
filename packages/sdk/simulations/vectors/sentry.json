@@ -1,0 +1,683 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "sentry",
+  "cases": [
+    {
+      "name": "resolve twice changes once",
+      "calls": [
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "status": "resolved"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "resolved",
+              "statusDetails": {},
+              "substatus": null,
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": null,
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "status": "resolved"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "resolved",
+              "statusDetails": {},
+              "substatus": null,
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": null,
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_get",
+          "args": {
+            "issue_id": "4501"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "resolved",
+              "statusDetails": {},
+              "substatus": null,
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": null,
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/issues/0/status": "resolved",
+        "/issues/0/substatus": null
+      }
+    },
+    {
+      "name": "resolve in next release, reopen, ignore",
+      "calls": [
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "status": "resolvedInNextRelease"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "resolved",
+              "statusDetails": {
+                "inNextRelease": true
+              },
+              "substatus": null,
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": null,
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "status": "unresolved"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "unresolved",
+              "statusDetails": {},
+              "substatus": "ongoing",
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": null,
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "status": "muted"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "ignored",
+              "statusDetails": {},
+              "substatus": "archived_forever",
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": null,
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/issues/0": {
+          "id": "4501",
+          "shortId": "CHECKOUT-4F",
+          "title": "TypeError: Cannot read properties of null (reading 'token')",
+          "culprit": "tokenizeCard(checkout/payments)",
+          "permalink": "https://shop.sentry.io/issues/4501/",
+          "level": "error",
+          "status": "ignored",
+          "statusDetails": {},
+          "substatus": "archived_forever",
+          "project": {
+            "id": "201",
+            "slug": "checkout",
+            "name": "checkout"
+          },
+          "count": "342",
+          "userCount": 57,
+          "firstSeen": "2024-11-15T03:12:00Z",
+          "lastSeen": "2024-11-15T05:40:00Z",
+          "assignedTo": null,
+          "numComments": 0,
+          "hasSeen": false
+        }
+      }
+    },
+    {
+      "name": "assign by email or user id, then unassign",
+      "calls": [
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "assignedTo": "maya@shop.example"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "unresolved",
+              "statusDetails": {},
+              "substatus": "ongoing",
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": {
+                "type": "user",
+                "id": "11",
+                "name": "Maya Ortiz",
+                "email": "maya@shop.example"
+              },
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "assignedTo": "user:12"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "unresolved",
+              "statusDetails": {},
+              "substatus": "ongoing",
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": {
+                "type": "user",
+                "id": "12",
+                "name": "Sam Rivera",
+                "email": "sam@shop.example"
+              },
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "assignedTo": null
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "unresolved",
+              "statusDetails": {},
+              "substatus": "ongoing",
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": null,
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/issues/0/assignedTo": null
+      }
+    },
+    {
+      "name": "comments are not idempotent",
+      "calls": [
+        {
+          "tool": "sentry_issue_comment_create",
+          "args": {
+            "issue_id": "4501",
+            "text": "hi"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "880001",
+              "type": "note",
+              "data": {
+                "text": "hi"
+              },
+              "user": {
+                "id": "99",
+                "name": "Ops Bot"
+              },
+              "dateCreated": "2024-11-15T05:53:21Z"
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_comment_create",
+          "args": {
+            "issue_id": "4501",
+            "text": "hi"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "880002",
+              "type": "note",
+              "data": {
+                "text": "hi"
+              },
+              "user": {
+                "id": "99",
+                "name": "Ops Bot"
+              },
+              "dateCreated": "2024-11-15T05:53:22Z"
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_comments_list",
+          "args": {
+            "issue_id": "4501"
+          },
+          "expect": {
+            "ok": true,
+            "data": [
+              {
+                "id": "880002",
+                "type": "note",
+                "data": {
+                  "text": "hi"
+                },
+                "user": {
+                  "id": "99",
+                  "name": "Ops Bot"
+                },
+                "dateCreated": "2024-11-15T05:53:22Z"
+              },
+              {
+                "id": "880001",
+                "type": "note",
+                "data": {
+                  "text": "hi"
+                },
+                "user": {
+                  "id": "99",
+                  "name": "Ops Bot"
+                },
+                "dateCreated": "2024-11-15T05:53:21Z"
+              }
+            ]
+          }
+        }
+      ],
+      "stateAfter": {
+        "/issues/0/numComments": 2,
+        "/comments": [
+          {
+            "id": "880001",
+            "issue": "4501",
+            "type": "note",
+            "data": {
+              "text": "hi"
+            },
+            "user": {
+              "id": "99",
+              "name": "Ops Bot"
+            },
+            "dateCreated": "2024-11-15T05:53:21Z"
+          },
+          {
+            "id": "880002",
+            "issue": "4501",
+            "type": "note",
+            "data": {
+              "text": "hi"
+            },
+            "user": {
+              "id": "99",
+              "name": "Ops Bot"
+            },
+            "dateCreated": "2024-11-15T05:53:22Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "list by status",
+      "calls": [
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "status": "resolved"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "4501",
+              "shortId": "CHECKOUT-4F",
+              "title": "TypeError: Cannot read properties of null (reading 'token')",
+              "culprit": "tokenizeCard(checkout/payments)",
+              "permalink": "https://shop.sentry.io/issues/4501/",
+              "level": "error",
+              "status": "resolved",
+              "statusDetails": {},
+              "substatus": null,
+              "project": {
+                "id": "201",
+                "slug": "checkout",
+                "name": "checkout"
+              },
+              "count": "342",
+              "userCount": 57,
+              "firstSeen": "2024-11-15T03:12:00Z",
+              "lastSeen": "2024-11-15T05:40:00Z",
+              "assignedTo": null,
+              "numComments": 0,
+              "hasSeen": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issues_list",
+          "args": {
+            "status": "unresolved"
+          },
+          "expect": {
+            "ok": true,
+            "data": [
+              {
+                "id": "4502",
+                "shortId": "CHECKOUT-4G",
+                "title": "TimeoutError: inventory service did not respond in 5000ms",
+                "culprit": "reserveStock(checkout/cart)",
+                "permalink": "https://shop.sentry.io/issues/4502/",
+                "level": "warning",
+                "status": "unresolved",
+                "statusDetails": {},
+                "substatus": "ongoing",
+                "project": {
+                  "id": "201",
+                  "slug": "checkout",
+                  "name": "checkout"
+                },
+                "count": "18",
+                "userCount": 9,
+                "firstSeen": "2024-11-14T22:00:00Z",
+                "lastSeen": "2024-11-15T05:10:00Z",
+                "assignedTo": null,
+                "numComments": 0,
+                "hasSeen": false
+              }
+            ]
+          }
+        },
+        {
+          "tool": "sentry_issues_list",
+          "args": {},
+          "expect": {
+            "ok": true,
+            "data": [
+              {
+                "id": "4501",
+                "shortId": "CHECKOUT-4F",
+                "title": "TypeError: Cannot read properties of null (reading 'token')",
+                "culprit": "tokenizeCard(checkout/payments)",
+                "permalink": "https://shop.sentry.io/issues/4501/",
+                "level": "error",
+                "status": "resolved",
+                "statusDetails": {},
+                "substatus": null,
+                "project": {
+                  "id": "201",
+                  "slug": "checkout",
+                  "name": "checkout"
+                },
+                "count": "342",
+                "userCount": 57,
+                "firstSeen": "2024-11-15T03:12:00Z",
+                "lastSeen": "2024-11-15T05:40:00Z",
+                "assignedTo": null,
+                "numComments": 0,
+                "hasSeen": false
+              },
+              {
+                "id": "4502",
+                "shortId": "CHECKOUT-4G",
+                "title": "TimeoutError: inventory service did not respond in 5000ms",
+                "culprit": "reserveStock(checkout/cart)",
+                "permalink": "https://shop.sentry.io/issues/4502/",
+                "level": "warning",
+                "status": "unresolved",
+                "statusDetails": {},
+                "substatus": "ongoing",
+                "project": {
+                  "id": "201",
+                  "slug": "checkout",
+                  "name": "checkout"
+                },
+                "count": "18",
+                "userCount": 9,
+                "firstSeen": "2024-11-14T22:00:00Z",
+                "lastSeen": "2024-11-15T05:10:00Z",
+                "assignedTo": null,
+                "numComments": 0,
+                "hasSeen": false
+              }
+            ]
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "errors",
+      "calls": [
+        {
+          "tool": "sentry_issue_get",
+          "args": {
+            "issue_id": "1"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "not_found",
+              "message": "The requested resource does not exist",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "assignedTo": "nobody@x.y"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_request",
+              "message": "Could not parse actor. Format should be `type:id` where type is `team` or `user`.",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_update",
+          "args": {
+            "issue_id": "4501",
+            "status": "closed"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_request",
+              "message": "Invalid request: status",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_comment_create",
+          "args": {
+            "issue_id": "4501",
+            "text": ""
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "invalid_request",
+              "message": "Invalid request: text",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "sentry_issue_comments_list",
+          "args": {
+            "issue_id": "9"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "not_found",
+              "message": "The requested resource does not exist",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}

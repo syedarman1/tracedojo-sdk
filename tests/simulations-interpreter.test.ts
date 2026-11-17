@@ -497,6 +497,27 @@ test('beforeRetry matches a single resource', async () => {
   assert.deepEqual(await run, { status: 'completed', message: 'Done.', output: 'note_1' });
 });
 
+test('beforeRetry where keys starting with / are JSON pointers', async () => {
+  const listed = ok({ data: [{ id: 'n2', attributes: { title: 'Other' } }, { id: 'n1', attributes: { title: 'Hi' } }] });
+  const { run } = scripted(
+    {
+      steps: [
+        {
+          call: 'create_note',
+          args: { title: 'Hi' },
+          attempts: 2,
+          save: 'note',
+          beforeRetry: { call: 'get_note', args: { id: 'x' }, find: { path: '/data', where: { '/attributes/title': 'Hi' } } },
+        },
+      ],
+      output: '{{saved.note.id}}',
+      message: 'Done.',
+    },
+    { create_note: [retryable], get_note: [listed] },
+  );
+  assert.deepEqual(await run, { status: 'completed', message: 'Done.', output: 'n1' });
+});
+
 test('$filter and $isotime', async () => {
   const spec = withTools({
     labels: {

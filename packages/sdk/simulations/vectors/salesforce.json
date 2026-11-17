@@ -1,0 +1,458 @@
+{
+  "schemaVersion": "simulation-vectors/1",
+  "simulation": "salesforce",
+  "cases": [
+    {
+      "name": "upsert inserts then updates",
+      "calls": [
+        {
+          "tool": "salesforce_sobject_upsert",
+          "args": {
+            "sobject": "Contact",
+            "externalIdField": "External_Id__c",
+            "externalId": "shop-9",
+            "fields": {
+              "LastName": "Park",
+              "Email": "casey@example.com"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "003000000000101AAA",
+              "success": true,
+              "errors": [],
+              "created": true
+            }
+          }
+        },
+        {
+          "tool": "salesforce_sobject_upsert",
+          "args": {
+            "sobject": "Contact",
+            "externalIdField": "External_Id__c",
+            "externalId": "shop-9",
+            "fields": {
+              "LastName": "Park",
+              "Phone": "1"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "003000000000101AAA",
+              "success": true,
+              "errors": [],
+              "created": false
+            }
+          }
+        },
+        {
+          "tool": "salesforce_sobject_upsert",
+          "args": {
+            "sobject": "Contact",
+            "externalIdField": "External_Id__c",
+            "externalId": "shop-9",
+            "fields": {
+              "LastName": "Park",
+              "Phone": "1"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "003000000000101AAA",
+              "success": true,
+              "errors": [],
+              "created": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/contacts/2": {
+          "attributes": {
+            "type": "Contact",
+            "url": "/services/data/v62.0/sobjects/Contact/003000000000101AAA"
+          },
+          "Id": "003000000000101AAA",
+          "FirstName": null,
+          "LastName": "Park",
+          "Email": "casey@example.com",
+          "Phone": "1",
+          "External_Id__c": "shop-9",
+          "CreatedDate": "2024-11-15T05:53:21Z",
+          "LastModifiedDate": "2024-11-15T05:53:21Z",
+          "SystemModstamp": "2024-11-15T05:53:21Z"
+        }
+      }
+    },
+    {
+      "name": "create twice duplicates, then upsert is ambiguous",
+      "calls": [
+        {
+          "tool": "salesforce_sobject_create",
+          "args": {
+            "sobject": "Contact",
+            "fields": {
+              "LastName": "Lee",
+              "External_Id__c": "shop-7"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "003000000000101AAA",
+              "success": true,
+              "errors": []
+            }
+          }
+        },
+        {
+          "tool": "salesforce_sobject_create",
+          "args": {
+            "sobject": "Contact",
+            "fields": {
+              "LastName": "Lee",
+              "External_Id__c": "shop-7"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "id": "003000000000102AAA",
+              "success": true,
+              "errors": []
+            }
+          }
+        },
+        {
+          "tool": "salesforce_sobject_upsert",
+          "args": {
+            "sobject": "Contact",
+            "externalIdField": "External_Id__c",
+            "externalId": "shop-7",
+            "fields": {
+              "Phone": "2"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "MULTIPLE_CHOICES",
+              "message": "More than one record found for External_Id__c",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "salesforce_query",
+          "args": {
+            "sobject": "Contact",
+            "where": [
+              {
+                "field": "External_Id__c",
+                "op": "eq",
+                "value": "shop-7"
+              }
+            ]
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "totalSize": 2,
+              "done": true,
+              "records": [
+                {
+                  "attributes": {
+                    "type": "Contact",
+                    "url": "/services/data/v62.0/sobjects/Contact/003000000000101AAA"
+                  },
+                  "Id": "003000000000101AAA",
+                  "FirstName": null,
+                  "LastName": "Lee",
+                  "Email": null,
+                  "Phone": null,
+                  "External_Id__c": "shop-7",
+                  "CreatedDate": "2024-11-15T05:53:21Z",
+                  "LastModifiedDate": "2024-11-15T05:53:21Z",
+                  "SystemModstamp": "2024-11-15T05:53:21Z"
+                },
+                {
+                  "attributes": {
+                    "type": "Contact",
+                    "url": "/services/data/v62.0/sobjects/Contact/003000000000102AAA"
+                  },
+                  "Id": "003000000000102AAA",
+                  "FirstName": null,
+                  "LastName": "Lee",
+                  "Email": null,
+                  "Phone": null,
+                  "External_Id__c": "shop-7",
+                  "CreatedDate": "2024-11-15T05:53:22Z",
+                  "LastModifiedDate": "2024-11-15T05:53:22Z",
+                  "SystemModstamp": "2024-11-15T05:53:22Z"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "update by id and get",
+      "calls": [
+        {
+          "tool": "salesforce_sobject_update",
+          "args": {
+            "sobject": "Contact",
+            "id": "003000000000002AAA",
+            "fields": {
+              "Phone": "3"
+            }
+          },
+          "expect": {
+            "ok": true,
+            "data": {}
+          }
+        },
+        {
+          "tool": "salesforce_sobject_get",
+          "args": {
+            "sobject": "Contact",
+            "id": "003000000000002AAA"
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "attributes": {
+                "type": "Contact",
+                "url": "/services/data/v62.0/sobjects/Contact/003000000000002AAA"
+              },
+              "Id": "003000000000002AAA",
+              "FirstName": "Alex",
+              "LastName": "Kim",
+              "Email": "alex@example.com",
+              "Phone": "3",
+              "External_Id__c": null,
+              "CreatedDate": "2024-11-02T10:00:00Z",
+              "LastModifiedDate": "2024-11-15T05:53:20Z",
+              "SystemModstamp": "2024-11-15T05:53:20Z"
+            }
+          }
+        }
+      ],
+      "stateAfter": {
+        "/contacts/1": {
+          "attributes": {
+            "type": "Contact",
+            "url": "/services/data/v62.0/sobjects/Contact/003000000000002AAA"
+          },
+          "Id": "003000000000002AAA",
+          "FirstName": "Alex",
+          "LastName": "Kim",
+          "Email": "alex@example.com",
+          "Phone": "3",
+          "External_Id__c": null,
+          "CreatedDate": "2024-11-02T10:00:00Z",
+          "LastModifiedDate": "2024-11-15T05:53:20Z",
+          "SystemModstamp": "2024-11-15T05:53:20Z"
+        }
+      }
+    },
+    {
+      "name": "required field, external id in body, unknown field",
+      "calls": [
+        {
+          "tool": "salesforce_sobject_create",
+          "args": {
+            "sobject": "Contact",
+            "fields": {
+              "FirstName": "No"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "REQUIRED_FIELD_MISSING",
+              "message": "Required fields are missing: [LastName]",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "salesforce_sobject_upsert",
+          "args": {
+            "sobject": "Contact",
+            "externalIdField": "External_Id__c",
+            "externalId": "shop-8",
+            "fields": {
+              "External_Id__c": "shop-9"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "INVALID_FIELD",
+              "message": "The external ID field must not be set in the request body",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "salesforce_sobject_create",
+          "args": {
+            "sobject": "Contact",
+            "fields": {
+              "LastName": "X",
+              "Fax": "1"
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "INVALID_FIELD",
+              "message": "No such field fields.Fax on sobject of type Contact",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "salesforce_query",
+          "args": {
+            "sobject": "Contact",
+            "where": [
+              {
+                "field": "Fax",
+                "op": "eq",
+                "value": "1"
+              }
+            ]
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "INVALID_FIELD",
+              "message": "No such column 'Fax' on sobject of type Contact",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "not found and bad sobject",
+      "calls": [
+        {
+          "tool": "salesforce_sobject_get",
+          "args": {
+            "sobject": "Contact",
+            "id": "003000000000999AAA"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "NOT_FOUND",
+              "message": "The requested resource does not exist",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "salesforce_sobject_update",
+          "args": {
+            "sobject": "Contact",
+            "id": "nope",
+            "fields": {}
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "NOT_FOUND",
+              "message": "The requested resource does not exist",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "salesforce_query",
+          "args": {
+            "sobject": "Lead"
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "INVALID_TYPE",
+              "message": "sObject type 'Lead' is not supported.",
+              "retryable": false
+            }
+          }
+        },
+        {
+          "tool": "salesforce_sobject_create",
+          "args": {
+            "sobject": "Contact",
+            "fields": {
+              "LastName": 5
+            }
+          },
+          "expect": {
+            "ok": false,
+            "error": {
+              "code": "JSON_PARSER_ERROR",
+              "message": "Cannot deserialize instance of fields.LastName",
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    },
+    {
+      "name": "query with neq and limit",
+      "calls": [
+        {
+          "tool": "salesforce_query",
+          "args": {
+            "sobject": "Contact",
+            "where": [
+              {
+                "field": "Phone",
+                "op": "neq",
+                "value": null
+              }
+            ],
+            "limit": 1
+          },
+          "expect": {
+            "ok": true,
+            "data": {
+              "totalSize": 1,
+              "done": true,
+              "records": [
+                {
+                  "attributes": {
+                    "type": "Contact",
+                    "url": "/services/data/v62.0/sobjects/Contact/003000000000001AAA"
+                  },
+                  "Id": "003000000000001AAA",
+                  "FirstName": "Riley",
+                  "LastName": "Chen",
+                  "Email": "riley@example.com",
+                  "Phone": "+1 415 555 0100",
+                  "External_Id__c": "shop-8",
+                  "CreatedDate": "2024-11-01T10:00:00Z",
+                  "LastModifiedDate": "2024-11-01T10:00:00Z",
+                  "SystemModstamp": "2024-11-01T10:00:00Z"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "stateAfter": {}
+    }
+  ]
+}
