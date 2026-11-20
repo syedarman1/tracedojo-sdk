@@ -48,18 +48,18 @@ The Python SDK runs the same `workflow.json` files and writes the same reports.
 Its adapter is a `.py` module that defines `tools` and `create_agent`; agents are
 `async def run(self, context)` and await `context.call(...)`.
 
-The Python CLI has `demo`, `test`, `compare`, and `upload`, with the same flags and
-exit codes as the JavaScript CLI. It has no `init`, so copy the bundled booking
-example to get started:
+The Python CLI has `demo`, `init`, `test`, `compare`, and `upload`, with the same
+flags and exit codes as the JavaScript CLI. Its `init` creates the booking starter:
 
 ```sh
 pip install tracedojo
 tracedojo demo
-cp -r "$(python -c 'import os, tracedojo.templates.booking as t; print(os.path.dirname(t.__file__))')" dojo
+tracedojo init
 tracedojo test --config dojo/workflow.json --adapter dojo/adapter.py --out .tracedojo/first-report.json
 ```
 
-`init`, the service simulations, `matrix`, and `proxy` are JavaScript only for now.
+`init` templates, the service simulations, `matrix`, and `proxy` are JavaScript
+only for now.
 A Python agent can still use `proxy`, which runs any agent command. Reports from
 either SDK can be imported, uploaded, or compared against each other. The
 [Python SDK README](https://github.com/syedarman1/tracedojo-sdk/tree/main/packages/python#readme)
@@ -570,6 +570,61 @@ and Salesforce. Start one with
 with `loadSimulation('stripe')` from `@tracedojo/sdk/simulations`. Each ships a fixed
 and a broken scripted agent, so you can see the failure before connecting your own.
 See [the simulation catalog](https://github.com/syedarman1/tracedojo-sdk/blob/main/docs/SIMULATIONS.md) for the list and spec format.
+
+### Test an agent that uses two services
+
+Most agents touch more than one service, for example a support agent that refunds
+in Stripe and then posts in Slack. Combine two simulations into one workflow: merge
+their tools and starting state, keep each service's state checks, and pick up to
+10 scenarios in total.
+
+```js
+// refund-and-notify.mjs
+import { runWorkflow, workflowExitCode } from '@tracedojo/sdk';
+import { loadSimulation } from '@tracedojo/sdk/simulations';
+import { createAgent } from './agent.mjs'; // your agent: { id, version, run(context) }
+
+const stripe = loadSimulation('stripe');
+const slack = loadSimulation('slack');
+const a = stripe.workflow();
+const b = slack.workflow();
+const prefix = (service, items) =>
+  items.map((item) => ({ ...item, id: `${service}-${item.id}` }));
+const pick = (items, ids) => items.filter((item) => ids.includes(item.id));
+// Counts and untouched records apply to any agent. Exact-record and completion
+// checks describe each simulation's own sample agent, so write your own.
+const stateChecks = (w) =>
+  w.checks.filter((c) => c.type === 'count' || c.type === 'unchanged');
+
+const workflow = {
+  ...a,
+  id: 'refund-and-notify',
+  title: 'Refund the order and tell the customer in Slack',
+  task: 'Refund order 7 and post a confirmation to Slack.',
+  initialState: { ...a.initialState, ...b.initialState },
+  checks: [
+    ...prefix('stripe', stateChecks(a)),
+    ...prefix('slack', stateChecks(b)),
+    { id: 'completed', label: 'Agent reports completion', type: 'equals',
+      source: 'completion', path: '/status', expected: 'completed' },
+  ],
+  scenarios: [
+    ...prefix('stripe', pick(a.scenarios, ['lost-confirmation', 'duplicate-delivery', 'prompt-injection'])),
+    ...prefix('slack', pick(b.scenarios, ['lost-confirmation', 'duplicate-delivery'])),
+  ],
+};
+
+const batch = await runWorkflow(workflow, {
+  tools: { ...stripe.tools, ...slack.tools },
+  createAgent,
+});
+for (const run of batch.runs) console.log(`${run.scenario.id}: ${run.status}`);
+process.exitCode = workflowExitCode(batch);
+```
+
+Tool names and state keys do not overlap between the shipped simulations. Running
+both scripted broken agents through this workflow fails the Stripe and Slack
+lost-confirmation scenarios with a second refund and a second post.
 
 ## Async tools and virtual time
 
