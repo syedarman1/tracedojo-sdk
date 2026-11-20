@@ -1,6 +1,6 @@
 {
   "name": "tracedojo",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Find agent failures before production: TraceDojo command-line starter",
   "type": "module",
   "license": "Apache-2.0",
@@ -14,7 +14,7 @@
     "NOTICE"
   ],
   "dependencies": {
-    "@tracedojo/sdk": "0.2.3"
+    "@tracedojo/sdk": "0.2.4"
   },
   "engines": {
     "node": ">=22.23.1"
