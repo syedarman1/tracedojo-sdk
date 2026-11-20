@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Syed Arman
-"""``tracedojo`` command line: test, demo, compare, upload.
+"""``tracedojo`` command line: init, test, demo, compare, upload.
 
 Flags, console output, never-overwrite behavior, and exit codes follow the
 JavaScript CLI so CI scripts work the same in either language.
@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import importlib.util
+import json
 import os
 import signal as os_signal
 import sys
@@ -33,6 +34,7 @@ from .upload import upload_message, upload_workflow_reports
 HELP = """TraceDojo for Python - test your agent against controlled tool failures
 
   tracedojo demo
+  tracedojo init                  copy the booking starter to dojo/ (--out to choose)
   tracedojo test
   tracedojo test --config dojo/workflow.json --adapter dojo/adapter.py --out dojo-report.json
   tracedojo compare --base main-report.json --candidate pr-report.json --out comparison.json --summary comparison.md
@@ -194,7 +196,7 @@ async def _test(values: argparse.Namespace) -> int:
             print(f"{run['scenario']['title']}: {run['status']}")
             for check in run["assertions"]:
                 if not check["passed"]:
-                    print(f"  {check['label']}: {check['detail']}")
+                    print(f"  {_failure_line(check)}")
         if batch.get("skippedReason"):
             print(batch["skippedReason"])
         print(f"Completed {len(batch['runs'])}/{batch['planned']} fault trials. Report: {destination}")
@@ -271,6 +273,35 @@ async def _demo(values: argparse.Namespace) -> int:
     return 0
 
 
+def _failure_line(check: dict) -> str:
+    """A failed check with its numbers, e.g. "Refunds: expected 1, observed 2."."""
+    if "expected" not in check or "actual" not in check:
+        return f"{check['label']}: {check['detail']}"
+
+    def short(value: object) -> str:
+        text = json.dumps(value, separators=(",", ":"), ensure_ascii=False)
+        return text if len(text) <= 80 else text[:77] + "..."
+
+    return f"{check['label']}: expected {short(check['expected'])}, observed {short(check['actual'])}."
+
+
+def _init(values: argparse.Namespace) -> int:
+    """Copy the bundled booking starter (workflow.json and adapter.py) to a new folder."""
+    from importlib import resources
+
+    target = Path(values.out or "dojo")
+    if target.exists():
+        raise FileExistsError(0, "exists", str(target))
+    source = resources.files("tracedojo.templates.booking")
+    target.mkdir(parents=True)
+    for name in ("workflow.json", "adapter.py"):
+        (target / name).write_text(source.joinpath(name).read_text(encoding="utf-8"), encoding="utf-8")
+    print(f"Created {target}/workflow.json and {target}/adapter.py from the booking starter.")
+    print("Run it: tracedojo test")
+    print(f"Then replace the simulated tools and agent in {target}/adapter.py with your own.")
+    return 0
+
+
 def _run(argv: Sequence[str]) -> int:
     parser = _parser()
     try:
@@ -299,6 +330,10 @@ def _run(argv: Sequence[str]) -> int:
         if len(positionals) != 1 or not values.base or not values.candidate or given - allowed:
             raise TracedojoError("compare requires --base and --candidate report files.")
         return _compare(values)
+    if command == "init":
+        if given - {"out"} or len(positionals) != 1:
+            raise TracedojoError("init takes only --out. See --help.")
+        return _init(values)
     allowed_by_command = {
         "test": {"config", "adapter", "out", "trials", "summary", "commit"},
         "demo": {"out"},
@@ -339,3 +374,4 @@ def entrypoint() -> None:
 
 if __name__ == "__main__":
     entrypoint()
+

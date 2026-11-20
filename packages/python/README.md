@@ -87,15 +87,15 @@ def create_agent():
 tracedojo test --config dojo/workflow.json --adapter dojo/adapter.py --trials 3 --out .tracedojo/report.json
 ```
 
-The complete booking starter ships inside the package. Copy it to `dojo/` to start
-from it (the Python CLI has no `init`):
+The complete booking starter ships inside the package. `tracedojo init` copies it
+to `dojo/` (or `--out <folder>`):
 
 ```sh
-cp -r "$(python -c 'import os, tracedojo.templates.booking as t; print(os.path.dirname(t.__file__))')" dojo
+tracedojo init
 ```
 
-`init`, the service simulations, `matrix`, and `proxy` are in the JavaScript SDK
-only for now.
+`init` templates, the service simulations, `matrix`, and `proxy` are in the
+JavaScript SDK only for now.
 
 Or from Python:
 

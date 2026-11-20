@@ -69,6 +69,8 @@ def test_test_fails_on_a_duplicate_booking_and_never_overwrites(dojo: Path):
     result = cli("test", "--out", "report.json", cwd=dojo)
     assert result.returncode == 1, result.stderr
     assert "Booking succeeds, confirmation is lost: failed" in result.stdout
+    # Failed checks show their numbers, not just "does not match".
+    assert "expected 1, observed 2." in result.stdout
     before = (dojo / "report.json").read_text()
     again = cli("test", "--out", "report.json", cwd=dojo)
     assert again.returncode == 2 and "Refusing to overwrite" in again.stderr
@@ -152,3 +154,14 @@ def test_ctrl_c_cancels_and_saves_partial_evidence(dojo: Path):
     assert "Control: cancelled" in stdout
     batch = parse_batch(json.loads((dojo / "report.json").read_text()))
     assert batch["baseline"]["issue"] == "cancelled" and batch["runs"] == []
+
+
+def test_init_copies_the_starter_and_it_passes(tmp_path: Path):
+    created = cli("init", cwd=tmp_path)
+    assert created.returncode == 0, created.stderr
+    assert (tmp_path / "dojo" / "workflow.json").is_file()
+    assert (tmp_path / "dojo" / "adapter.py").is_file()
+    result = cli("test", "--out", "report.json", cwd=tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+    again = cli("init", cwd=tmp_path)
+    assert again.returncode == 2 and "Refusing to overwrite" in again.stderr

@@ -174,6 +174,8 @@ test('CLI scaffolds and runs from a separate directory, preserves files, and rep
     );
     const failed = run(...args.slice(0, -1), 'failed.json');
     assert.equal(failed.status, 1, failed.stdout + failed.stderr);
+    // Failed checks show their numbers, not just "does not match".
+    assert.match(failed.stdout, /expected 1, observed 2\./);
     await writeFile(adapter, 'throw new Error("sensitive-import-error")');
     const collision = run(...args);
     assert.equal(collision.status, 2);

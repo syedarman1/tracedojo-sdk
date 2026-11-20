@@ -18,7 +18,7 @@ actually changed in your application's state, not what the agent claimed.
 No API key, no account. Node.js 22.23.1 or later.
 
 ```sh
-npx tracedojo@0.1.7 demo
+npx tracedojo@0.1.8 demo
 ```
 
 ```text
@@ -35,8 +35,8 @@ The Python SDK lives in [`packages/python`](packages/python). It reads the same
 dashboard, `compare`, and the CI gate accept reports from either language. It is
 on PyPI: `pip install tracedojo`, then run `tracedojo demo`. Python 3.10 or later,
 with a LangGraph adapter (`pip install "tracedojo[langgraph]"`). The Python CLI has
-`demo`, `test`, `compare`, and `upload`; `init`, the service simulations, `matrix`,
-and `proxy` are JavaScript only for now.
+`demo`, `init`, `test`, `compare`, and `upload`; `init` templates, the service
+simulations, `matrix`, and `proxy` are JavaScript only for now.
 
 ## What it catches
 
@@ -89,7 +89,7 @@ inconclusive, not as passes.
 Then:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.3
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.4
 npx tracedojo init            # starter adapter + workflow
 npx tracedojo test --trials 3
 ```
