@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import importlib.util
+import json
 import os
 import signal as os_signal
 import sys
@@ -194,7 +195,7 @@ async def _test(values: argparse.Namespace) -> int:
             print(f"{run['scenario']['title']}: {run['status']}")
             for check in run["assertions"]:
                 if not check["passed"]:
-                    print(f"  {check['label']}: {check['detail']}")
+                    print(f"  {_failure_line(check)}")
         if batch.get("skippedReason"):
             print(batch["skippedReason"])
         print(f"Completed {len(batch['runs'])}/{batch['planned']} fault trials. Report: {destination}")
@@ -339,3 +340,15 @@ def entrypoint() -> None:
 
 if __name__ == "__main__":
     entrypoint()
+
+
+def _failure_line(check: dict) -> str:
+    """A failed check with its numbers, e.g. "Refunds: expected 1, observed 2."."""
+    if "expected" not in check or "actual" not in check:
+        return f"{check['label']}: {check['detail']}"
+
+    def short(value: object) -> str:
+        text = json.dumps(value, separators=(",", ":"), ensure_ascii=False)
+        return text if len(text) <= 80 else text[:77] + "..."
+
+    return f"{check['label']}: expected {short(check['expected'])}, observed {short(check['actual'])}."

@@ -461,7 +461,7 @@ async function main() {
       for (const run of batch.runs) {
         console.log(`${run.scenario.title}: ${run.status}`);
         for (const check of run.assertions.filter((c) => !c.passed))
-          console.log(`  ${check.label}: ${check.detail}`);
+          console.log(`  ${failureLine(check)}`);
       }
       if (batch.skippedReason) console.log(batch.skippedReason);
       console.log(
@@ -492,7 +492,7 @@ async function main() {
     for (const run of batch.runs) {
       console.log(`${run.scenario.title}: ${run.status}`);
       for (const check of run.assertions.filter((c) => !c.passed))
-        console.log(`  ${check.label}: ${check.detail}`);
+        console.log(`  ${failureLine(check)}`);
     }
     if (batch.skippedReason) console.log(batch.skippedReason);
     console.log(
@@ -518,3 +518,19 @@ main().catch((error: unknown) => {
   console.error(safe);
   process.exitCode = 2;
 });
+
+/** A failed check with its numbers, e.g. "Refunds: expected 1, observed 2." */
+function failureLine(check: {
+  label: string;
+  detail: string;
+  expected?: unknown;
+  actual?: unknown;
+}): string {
+  if (!('expected' in check) || !('actual' in check))
+    return `${check.label}: ${check.detail}`;
+  const short = (value: unknown) => {
+    const text = JSON.stringify(value) ?? String(value);
+    return text.length > 80 ? `${text.slice(0, 77)}...` : text;
+  };
+  return `${check.label}: expected ${short(check.expected)}, observed ${short(check.actual)}.`;
+}
