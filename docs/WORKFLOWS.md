@@ -13,15 +13,15 @@ Use Node 22.23.1 or later (the repository itself pins 22.23.1).
 For a quick start in an empty directory:
 
 ```sh
-npx tracedojo@0.1.8 init
-npx tracedojo@0.1.8 test
-npx tracedojo@0.1.8 demo
+npx tracedojo@0.1.9 init
+npx tracedojo@0.1.9 test
+npx tracedojo@0.1.9 demo
 ```
 
 For reproducible CI, use an existing npm project or run `npm init -y` first:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.4
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.5
 npx --no-install tracedojo init --ci
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
@@ -37,7 +37,7 @@ setup rolls back its new files and preserves existing files. Use `init` without
 existing workflow. `--out tests/dojo` chooses another starter directory; pass the
 matching `--config` and `--adapter` paths to `test`.
 
-To see a complete failure and fix immediately, run `npx tracedojo@0.1.8 demo`.
+To see a complete failure and fix immediately, run `npx tracedojo@0.1.9 demo`.
 It saves `before.json` and `after.json` in a new directory under `.tracedojo/`.
 Import both in the Workflows page. This scripted demo requires no model key
 or repository checkout.
@@ -568,63 +568,34 @@ Calendar, Postgres, Shopify, Zendesk, Jira, HubSpot, Datadog, PagerDuty, Sentry,
 and Salesforce. Start one with
 `npx --no-install tracedojo init --template stripe --out dojo`, or load it in code
 with `loadSimulation('stripe')` from `@tracedojo/sdk/simulations`. Each ships a fixed
-and a broken scripted agent, so you can see the failure before connecting your own.
+and a broken scripted agent, so you can see the failure before connecting your own. If your
+agent uses two services, see [Test an agent that uses two services](#test-an-agent-that-uses-two-services).
 See [the simulation catalog](https://github.com/syedarman1/tracedojo-sdk/blob/main/docs/SIMULATIONS.md) for the list and spec format.
 
 ### Test an agent that uses two services
 
 Most agents touch more than one service, for example a support agent that refunds
-in Stripe and then posts in Slack. Combine two simulations into one workflow: merge
-their tools and starting state, keep each service's state checks, and pick up to
-10 scenarios in total.
+in Stripe and then posts in Slack. Join two simulations with `+`:
 
-```js
-// refund-and-notify.mjs
-import { runWorkflow, workflowExitCode } from '@tracedojo/sdk';
-import { loadSimulation } from '@tracedojo/sdk/simulations';
-import { createAgent } from './agent.mjs'; // your agent: { id, version, run(context) }
-
-const stripe = loadSimulation('stripe');
-const slack = loadSimulation('slack');
-const a = stripe.workflow();
-const b = slack.workflow();
-const prefix = (service, items) =>
-  items.map((item) => ({ ...item, id: `${service}-${item.id}` }));
-const pick = (items, ids) => items.filter((item) => ids.includes(item.id));
-// Counts and untouched records apply to any agent. Exact-record and completion
-// checks describe each simulation's own sample agent, so write your own.
-const stateChecks = (w) =>
-  w.checks.filter((c) => c.type === 'count' || c.type === 'unchanged');
-
-const workflow = {
-  ...a,
-  id: 'refund-and-notify',
-  title: 'Refund the order and tell the customer in Slack',
-  task: 'Refund order 7 and post a confirmation to Slack.',
-  initialState: { ...a.initialState, ...b.initialState },
-  checks: [
-    ...prefix('stripe', stateChecks(a)),
-    ...prefix('slack', stateChecks(b)),
-    { id: 'completed', label: 'Agent reports completion', type: 'equals',
-      source: 'completion', path: '/status', expected: 'completed' },
-  ],
-  scenarios: [
-    ...prefix('stripe', pick(a.scenarios, ['lost-confirmation', 'duplicate-delivery', 'prompt-injection'])),
-    ...prefix('slack', pick(b.scenarios, ['lost-confirmation', 'duplicate-delivery'])),
-  ],
-};
-
-const batch = await runWorkflow(workflow, {
-  tools: { ...stripe.tools, ...slack.tools },
-  createAgent,
-});
-for (const run of batch.runs) console.log(`${run.scenario.id}: ${run.status}`);
-process.exitCode = workflowExitCode(batch);
+```sh
+npx --no-install tracedojo init --template stripe+slack --out dojo
+npx --no-install tracedojo test
 ```
 
-Tool names and state keys do not overlap between the shipped simulations. Running
-both scripted broken agents through this workflow fails the Stripe and Slack
-lost-confirmation scenarios with a second refund and a second post.
+The workflow merges both services' tools and starting state. Its scenarios fault
+each service's main write (`stripe_create_refund` and `slack_chat_postMessage`), so
+any agent doing that job reaches them. Checks come from each service: record counts
+and records that must stay untouched, plus a completion check. Add checks for the
+exact records your agent should write. Reports, `compare`, uploads, and CI work as
+with any other workflow. Any two of the 14 simulations combine the same way, such as
+`github+jira`.
+
+The scripted reference agent runs the Stripe sample agent and then the Slack one.
+Set `variant` to `'broken'` in `adapter.mjs` and both lost-confirmation scenarios
+fail with a second refund and a second post. Replace it with your agent.
+
+If your agent never makes a faulted call, that scenario is inconclusive, the run
+exits 3, and the output names the call that never happened.
 
 ## Async tools and virtual time
 

@@ -7,7 +7,7 @@ import { mkdir, open, readFile, stat, unlink } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { runWorkflow, type WorkflowAdapter } from './index.js';
+import { runWorkflow, type WorkflowAdapter, type WorkflowReport } from './index.js';
 import {
   boundedJson,
   parseWorkflow,
@@ -42,6 +42,7 @@ const help = `TraceDojo — test your agent against controlled tool failures
   tracedojo init --out dojo --ci
   tracedojo templates
   tracedojo init --template refunds --out dojo
+  tracedojo init --template stripe+slack --out dojo    # two services, one agent
   tracedojo init --virtual-time --out dojo
   tracedojo test
   tracedojo matrix --out dojo/matrix.json
@@ -460,6 +461,8 @@ async function main() {
       console.log(`Control: ${batch.baseline.status}`);
       for (const run of batch.runs) {
         console.log(`${run.scenario.title}: ${run.status}`);
+        const untested = unreachedLine(run);
+        if (untested) console.log(`  ${untested}`);
         for (const check of run.assertions.filter((c) => !c.passed))
           console.log(`  ${failureLine(check)}`);
       }
@@ -491,6 +494,8 @@ async function main() {
     console.log(`Control: ${batch.baseline.status}`);
     for (const run of batch.runs) {
       console.log(`${run.scenario.title}: ${run.status}`);
+      const untested = unreachedLine(run);
+      if (untested) console.log(`  ${untested}`);
       for (const check of run.assertions.filter((c) => !c.passed))
         console.log(`  ${failureLine(check)}`);
     }
@@ -533,4 +538,18 @@ function failureLine(check: {
     return text.length > 80 ? `${text.slice(0, 77)}...` : text;
   };
   return `${check.label}: expected ${short(check.expected)}, observed ${short(check.actual)}.`;
+}
+
+/** Why an inconclusive trial tested nothing: the fault's tool was never called. */
+function unreachedLine(run: WorkflowReport): string | undefined {
+  if (run.status !== 'inconclusive' || run.issue || run.fault.triggered)
+    return undefined;
+  const fault = run.scenario.fault;
+  if (!('tool' in fault))
+    return 'The fault never fired, so this scenario was not tested.';
+  const reached =
+    fault.occurrence > 1
+      ? `never made call ${fault.occurrence} to ${fault.tool}`
+      : `never called ${fault.tool}`;
+  return `The agent ${reached}, so this fault was not tested. Remove the scenario or point it at a call your agent makes.`;
 }

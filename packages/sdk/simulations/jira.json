@@ -794,7 +794,7 @@
     "checks": [
       {
         "id": "one-issue",
-        "label": "Exactly one new issue",
+        "label": "Exactly one new issue (2 in total)",
         "type": "count",
         "path": "/issues",
         "expected": 2

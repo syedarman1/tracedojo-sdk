@@ -18,7 +18,7 @@ actually changed in your application's state, not what the agent claimed.
 No API key, no account. Node.js 22.23.1 or later.
 
 ```sh
-npx tracedojo@0.1.8 demo
+npx tracedojo@0.1.9 demo
 ```
 
 ```text
@@ -89,7 +89,7 @@ inconclusive, not as passes.
 Then:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.4
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.5
 npx tracedojo init            # starter adapter + workflow
 npx tracedojo test --trials 3
 ```
@@ -97,7 +97,7 @@ npx tracedojo test --trials 3
 Ten starter worlds are included — calendar, payments, refunds, CRM, email, files,
 SQL, inventory, subscriptions, webhooks: `npx tracedojo init --template refunds`.
 Fourteen stateful service simulations (Stripe, Slack, GitHub, Gmail, Google Calendar, Postgres, Shopify,
-Zendesk, Jira, HubSpot, Datadog, PagerDuty, Sentry, Salesforce) start the same way: `npx tracedojo init --template stripe`. See
+Zendesk, Jira, HubSpot, Datadog, PagerDuty, Sentry, Salesforce) start the same way: `npx tracedojo init --template stripe`. Combine two for an agent that uses both: `npx tracedojo init --template stripe+slack`. See
 [docs/SIMULATIONS.md](docs/SIMULATIONS.md).
 Or generate a fault matrix from your declared tools: `npx tracedojo matrix`.
 

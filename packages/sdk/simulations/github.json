@@ -676,7 +676,7 @@
       },
       {
         "id": "one-comment",
-        "label": "Exactly one new comment",
+        "label": "Exactly one new comment (2 in total)",
         "type": "count",
         "path": "/comments",
         "expected": 2

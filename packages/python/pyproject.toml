@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tracedojo"
-version = "0.1.3"
+version = "0.1.4"
 description = "Controlled tool failures and state assertions for AI agents"
 readme = "README.md"
 license = "Apache-2.0"

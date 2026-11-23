@@ -790,7 +790,7 @@
     "checks": [
       {
         "id": "one-order",
-        "label": "Exactly one new order",
+        "label": "Exactly one new order (2 in total)",
         "type": "count",
         "path": "/orders",
         "expected": 2

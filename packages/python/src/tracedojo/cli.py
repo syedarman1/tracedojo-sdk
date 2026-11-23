@@ -194,6 +194,9 @@ async def _test(values: argparse.Namespace) -> int:
         print(f"Control: {batch['baseline']['status']}")
         for run in batch["runs"]:
             print(f"{run['scenario']['title']}: {run['status']}")
+            untested = _unreached_line(run)
+            if untested:
+                print(f"  {untested}")
             for check in run["assertions"]:
                 if not check["passed"]:
                     print(f"  {_failure_line(check)}")
@@ -285,13 +288,29 @@ def _failure_line(check: dict) -> str:
     return f"{check['label']}: expected {short(check['expected'])}, observed {short(check['actual'])}."
 
 
+def _unreached_line(run: dict) -> str:
+    """Why an inconclusive trial tested nothing: the fault's tool was never called."""
+    if run["status"] != "inconclusive" or run.get("issue") or run["fault"]["triggered"]:
+        return ""
+    fault = run["scenario"]["fault"]
+    tool = fault.get("tool")
+    if not tool:
+        return "The fault never fired, so this scenario was not tested."
+    occurrence = fault.get("occurrence", 1)
+    reached = f"never made call {occurrence} to {tool}" if occurrence > 1 else f"never called {tool}"
+    return (
+        f"The agent {reached}, so this fault was not tested. "
+        "Remove the scenario or point it at a call your agent makes."
+    )
+
+
 def _init(values: argparse.Namespace) -> int:
     """Copy the bundled booking starter (workflow.json and adapter.py) to a new folder."""
     from importlib import resources
 
     target = Path(values.out or "dojo")
     if target.exists():
-        raise FileExistsError(0, "exists", str(target))
+        raise TracedojoError(f"{target} already exists. Choose a new folder with --out.")
     source = resources.files("tracedojo.templates.booking")
     target.mkdir(parents=True)
     for name in ("workflow.json", "adapter.py"):

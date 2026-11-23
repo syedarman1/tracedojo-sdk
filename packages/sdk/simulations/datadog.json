@@ -839,7 +839,7 @@
     "checks": [
       {
         "id": "one-incident",
-        "label": "Exactly one new incident",
+        "label": "Exactly one new incident (3 in total)",
         "type": "count",
         "path": "/incidents",
         "expected": 3
