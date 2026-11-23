@@ -669,7 +669,7 @@
     "checks": [
       {
         "id": "one-contact",
-        "label": "Exactly one new contact",
+        "label": "Exactly one new contact (3 in total)",
         "type": "count",
         "path": "/contacts",
         "expected": 3

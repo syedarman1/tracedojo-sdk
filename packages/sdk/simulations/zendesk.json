@@ -679,7 +679,7 @@
     "checks": [
       {
         "id": "one-reply",
-        "label": "Exactly one new comment",
+        "label": "Exactly one new comment (3 in total)",
         "type": "count",
         "path": "/comments",
         "expected": 3

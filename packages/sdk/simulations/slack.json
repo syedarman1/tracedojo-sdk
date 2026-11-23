@@ -736,7 +736,7 @@
     "checks": [
       {
         "id": "one-post",
-        "label": "Exactly one new message",
+        "label": "Exactly one new message (3 in total)",
         "type": "count",
         "path": "/messages",
         "expected": 3

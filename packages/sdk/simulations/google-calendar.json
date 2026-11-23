@@ -883,7 +883,7 @@
     "checks": [
       {
         "id": "one-event",
-        "label": "Exactly one new event",
+        "label": "Exactly one new event (3 in total)",
         "type": "count",
         "path": "/events",
         "expected": 3

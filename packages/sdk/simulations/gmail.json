@@ -736,7 +736,7 @@
     "checks": [
       {
         "id": "one-email",
-        "label": "Exactly one email sent",
+        "label": "Exactly one email sent (3 in total)",
         "type": "count",
         "path": "/messages",
         "expected": 3
