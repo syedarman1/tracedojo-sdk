@@ -219,6 +219,8 @@ In \`adapter.mjs\`, change \`createAgent('fixed')\` to \`createAgent('broken')\`
 
 Shapes, idempotency and error codes follow ${spec.api.docs}. Errors marked \`verified: false\` in the spec were not confirmed against official documentation. See docs/SIMULATIONS.md in the TraceDojo SDK repository for fidelity notes and deviations.
 
+If your agent also uses another service, combine two simulations: \`npx tracedojo init --template ${id}+${id === 'slack' ? 'stripe' : 'slack'}\` (any two of the 14 work).
+
 Local adapters are trusted code, not sandboxed. Add .tracedojo/ to .gitignore; reports can contain application data.
 `;
   return {
@@ -228,7 +230,130 @@ Local adapters are trusted code, not sandboxed. Add .tracedojo/ to .gitignore; r
   };
 }
 
+/**
+ * Two simulations in one workflow, for an agent that uses both services
+ * (`init --template stripe+slack`). Each service contributes the scenarios that
+ * fault its main write tool, so any agent doing that job reaches them.
+ */
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
+
+function combinedSimulationFiles(ids: string[]): Record<string, string> {
+  const [first, second] = ids as [string, string];
+  if (ids.length !== 2 || first === second || !ids.every((id) => simulationIds.includes(id)))
+    throw new Error(
+      `Combine two different simulations, like stripe+slack. Choose from: ${simulationIds.join(', ')}.`,
+    );
+  const sims = ids.map((id) => ({ id, sim: loadSimulation(id) }));
+  const parts = sims.map(({ id, sim }) => {
+    const workflow = sim.workflow() as {
+      initialState: Record<string, Json>;
+      checks: { id: string; type: string }[];
+      scenarios: { id: string; checks?: unknown; fault: { tool: string } }[];
+    };
+    const main = workflow.scenarios.find((s) => s.id === 'lost-confirmation')!.fault.tool;
+    const prefix = <T extends { id: string }>(items: T[]) =>
+      items.map((item) => ({ ...item, id: `${id}-${item.id}` }));
+    return {
+      id,
+      sim,
+      main,
+      state: workflow.initialState,
+      tools: Object.keys(sim.tools),
+      // Counts and untouched records hold for any agent doing this job. Exact
+      // records and completion output describe the sample agent only.
+      checks: prefix(workflow.checks.filter((c) => c.type === 'count' || c.type === 'unchanged')),
+      // Scenarios with their own checks assume a single-service workflow.
+      scenarios: prefix(workflow.scenarios.filter((s) => !s.checks && s.fault.tool === main)),
+    };
+  });
+  const [a, b] = parts as [(typeof parts)[0], (typeof parts)[0]];
+  if (a.tools.some((tool) => b.tools.includes(tool)) ||
+      Object.keys(a.state).some((key) => key in b.state))
+    throw new Error(`${first} and ${second} share tool names or state keys and cannot be combined.`);
+  const nameA = a.sim.spec.api.name;
+  const nameB = b.sim.spec.api.name;
+  const workflow = {
+    schemaVersion: 'workflow/1',
+    id: `${first}-${second}`,
+    title: `${String(a.sim.spec.workflow.title)}, then ${lowerFirst(String(b.sim.spec.workflow.title))}`,
+    task: `${String(a.sim.spec.workflow.task)} Then: ${String(b.sim.spec.workflow.task)}`,
+    initialState: { ...a.state, ...b.state },
+    checks: [
+      ...a.checks,
+      ...b.checks,
+      {
+        id: 'completed',
+        label: 'Agent reports completion',
+        type: 'equals',
+        source: 'completion',
+        path: '/status',
+        expected: 'completed',
+      },
+    ],
+    scenarios: [...a.scenarios, ...b.scenarios],
+  };
+  const adapter = `// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Syed Arman
+
+import { loadSimulation } from '@tracedojo/sdk/simulations';
+
+// Stateful ${nameA} and ${nameB} simulations shipped with the SDK.
+const first = loadSimulation(${JSON.stringify(first)});
+const second = loadSimulation(${JSON.stringify(second)});
+
+export const tools = { ...first.tools, ...second.tools };
+
+// Scripted reference agent: the ${first} sample agent, then the ${second} one.
+// Change 'fixed' to 'broken' to watch both lost-confirmation scenarios fail.
+// Replace it with your agent and route every tool call through context.call.
+const variant = 'fixed';
+export function createAgent() {
+  const a = first.createAgent(variant);
+  const b = second.createAgent(variant);
+  return {
+    id: ${JSON.stringify(`${first}-${second}-reference`)},
+    version: '1',
+    async run(context) {
+      await a.run(context);
+      return b.run(context);
+    },
+  };
+}
+`;
+  const readme = `# ${workflow.title}
+
+Stateful, in-memory ${nameA} and ${nameB} simulations in one workflow, for an agent that uses both. No model calls or real services.
+
+Run from your repository with the SDK installed:
+
+\`\`\`sh
+npx --no-install tracedojo test --config PATH/workflow.json --adapter PATH/adapter.mjs
+\`\`\`
+
+Replace PATH with this directory. The scenarios fault each service's main write: \`${a.main}\` and \`${b.main}\`. They cover a lost confirmation, a request timeout, temporary unavailability, a truncated response${a.scenarios.length + b.scenarios.length > 8 ? ', and duplicate delivery where the service has it' : ''}.
+
+Checks come from each service: record counts and records that must stay untouched, plus a completion check. Add checks for the exact records your agent should write.
+
+If your agent never calls one of those tools, its scenarios are reported as inconclusive and the run exits 3. Remove those scenarios from \`workflow.json\`, or point them at a tool your agent does call.
+
+## The bugs to reproduce
+
+- ${a.sim.spec.agent.bug}
+- ${b.sim.spec.agent.bug}
+
+In \`adapter.mjs\`, change \`variant\` to \`'broken'\`. Both lost-confirmation scenarios fail. Change it back to pass.
+
+Local adapters are trusted code, not sandboxed. Add .tracedojo/ to .gitignore; reports can contain application data.
+`;
+  return {
+    'workflow.json': JSON.stringify(workflow, null, 2) + '\n',
+    'adapter.mjs': adapter,
+    'README.md': readme,
+  };
+}
+
 export async function worldFiles(id: string): Promise<Record<string, string>> {
+  if (id.includes('+')) return combinedSimulationFiles(id.split('+'));
   if (simulationIds.includes(id)) return simulationFiles(id);
   if (faultWorlds.some((world) => world.id === id)) {
     const files: Record<string, string> = {};
