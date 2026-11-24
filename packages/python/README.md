@@ -36,7 +36,7 @@ reuses its key passes. Both reports are saved in a new directory under `.tracedo
 
 A workflow (`workflow.json`) holds the task, the starting state, outcome checks, and
 fault scenarios. It is the same `workflow/1` file the JavaScript SDK reads; see
-[`docs/WORKFLOWS.md`](../../docs/WORKFLOWS.md) for every field. An adapter module
+[the workflow reference](https://github.com/syedarman1/tracedojo-sdk/blob/main/docs/WORKFLOWS.md) for every field. An adapter module
 defines the simulated tools and a factory for your agent:
 
 ```python
@@ -172,21 +172,19 @@ that route through `context.call`; the live tool functions are never invoked.
 Invoke graphs asynchronously (`ainvoke`). Model requests made by your graph use your
 provider account and may incur charges.
 
-## How parity is tested
+## Parity with JavaScript
 
-`tests/test_parity.py` runs 38 workflow cases through both SDKs (the booking
-starter, all eight faults, every check type, run limits, protocol violations, and
-virtual time) and requires byte-identical reports after removing random IDs and
-timings. It also checks that each SDK's schema accepts the other's batches and
-rejects the same tampered ones, that `compare` gives identical results on mixed
-pairs, and that fingerprints, imported report IDs, redaction, workflow parsing,
-and Markdown summaries match. It needs Node and the built JavaScript SDK:
+The repository runs 38 workflow cases through both SDKs on every change and
+requires byte-identical reports, so a Python report and a JavaScript report for
+the same workflow compare cleanly. Details are in the
+[contributor notes](https://github.com/syedarman1/tracedojo-sdk/blob/main/packages/python/CONTRIBUTING.md).
 
-```sh
-npm ci && npm run build            # repository root
-cd packages/python && pip install -e ".[langgraph]" pytest && pytest
-```
+## Links
+
+- [Setup guide](https://tracedojo.com/docs) · [Demos](https://tracedojo.com/demos)
+- Source and issues: [github.com/syedarman1/tracedojo-sdk](https://github.com/syedarman1/tracedojo-sdk)
+- Optional hosted dashboard for saving and comparing reports: [tracedojo.com](https://tracedojo.com)
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache-2.0. See [LICENSE](https://github.com/syedarman1/tracedojo-sdk/blob/main/packages/python/LICENSE) and [NOTICE](https://github.com/syedarman1/tracedojo-sdk/blob/main/packages/python/NOTICE).
