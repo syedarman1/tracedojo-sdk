@@ -375,7 +375,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(str(error), file=sys.stderr)
         code = 2
     except FileExistsError as error:
-        print(f"Refusing to overwrite existing evidence: {error.filename}", file=sys.stderr)
+        name = os.path.relpath(error.filename) if error.filename else "The output file"
+        print(
+            f"{name} already exists, and TraceDojo never overwrites a saved report. "
+            "Pass a new --out path, or delete the old file and run again.",
+            file=sys.stderr,
+        )
         code = 2
     except FileNotFoundError as error:
         print(f"File not found: {error.filename}", file=sys.stderr)

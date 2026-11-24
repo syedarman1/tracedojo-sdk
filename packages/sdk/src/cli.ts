@@ -4,7 +4,7 @@
 
 import { parseArgs } from "node:util";
 import { mkdir, open, readFile, stat, unlink } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import {
@@ -334,8 +334,9 @@ async function main() {
   )
     throw new Error("Unsupported arguments. See --help.");
   if (command === "templates") {
+    const width = Math.max(...templateWorlds.map((world) => world.id.length));
     for (const world of templateWorlds)
-      console.log(`${world.id.padEnd(16)} ${world.title}`);
+      console.log(`${world.id.padEnd(width)}  ${world.title}`);
     console.log(
       "\nJoin two simulations with + to test an agent that uses both, like --template stripe+slack.",
     );
@@ -495,13 +496,22 @@ async function main() {
 
 main().catch((error: unknown) => {
   // Schema validation errors can contain customer inputs; never print them.
+  const exists = (error as { code?: string; path?: string } | null)?.code;
   const safe =
-    error instanceof Error && error.constructor === Error
-      ? error.message
-      : "Invalid input or output. Check the file paths, JSON, and workflow contract.";
+    exists === "EEXIST"
+      ? existingOutput((error as { path?: string }).path)
+      : error instanceof Error && error.constructor === Error
+        ? error.message
+        : "Invalid input or output. Check the file paths, JSON, and workflow contract.";
   console.error(safe);
   process.exitCode = 2;
 });
+
+/** Reports are evidence, so an existing --out file is kept and the run stops before it starts. */
+function existingOutput(path: string | undefined) {
+  const name = path ? relative(process.cwd(), path) || path : "The output file";
+  return `${name} already exists, and TraceDojo never overwrites a saved report. Pass a new --out path, or delete the old file and run again.`;
+}
 
 /** Prints each trial with the checks that failed, starting with the control. */
 function printBatch(batch: WorkflowBatch, destination: string) {
