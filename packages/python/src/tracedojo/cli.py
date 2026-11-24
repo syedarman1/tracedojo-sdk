@@ -192,6 +192,9 @@ async def _test(values: argparse.Namespace) -> int:
         if summary_fd is not None:
             _write(summary_fd, workflow_summary(batch))
         print(f"Control: {batch['baseline']['status']}")
+        for check in batch["baseline"].get("assertions", []):
+            if not check["passed"]:
+                print(f"  {_failure_line(check)}")
         for run in batch["runs"]:
             print(f"{run['scenario']['title']}: {run['status']}")
             untested = _unreached_line(run)

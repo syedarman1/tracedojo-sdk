@@ -176,3 +176,14 @@ def test_inconclusive_trials_say_which_call_never_happened(tmp_path: Path):
     result = cli("test", "--out", "report.json", cwd=tmp_path)
     assert result.returncode == 3, result.stdout + result.stderr
     assert "The agent never made call 5 to reserve_slot, so this fault was not tested." in result.stdout
+
+
+def test_a_failed_control_names_its_failing_checks(tmp_path: Path):
+    assert cli("init", cwd=tmp_path).returncode == 0
+    config = tmp_path / "dojo" / "workflow.json"
+    workflow = json.loads(config.read_text())
+    next(c for c in workflow["checks"] if c["id"] == "one-booking")["expected"] = 2
+    config.write_text(json.dumps(workflow))
+    result = cli("test", "--out", "report.json", cwd=tmp_path)
+    assert result.returncode == 3, result.stdout + result.stderr
+    assert "Control: failed\n  Exactly one booking: expected 2, observed 1." in result.stdout
