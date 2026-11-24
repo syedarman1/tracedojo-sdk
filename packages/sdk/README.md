@@ -84,9 +84,26 @@ npx tracedojo init            # starter adapter + workflow
 npx tracedojo test --trials 3
 ```
 
-Ten starter worlds are included — calendar, payments, refunds, CRM, email, files,
-SQL, inventory, subscriptions, webhooks: `npx tracedojo init --template refunds`.
-Or generate a fault matrix from your declared tools: `npx tracedojo matrix`.
+`npx tracedojo templates` lists 27 ready-made starters: 14 service simulations
+(Stripe, Slack, GitHub, Gmail, Google Calendar, HubSpot, Jira, PagerDuty,
+Postgres, Salesforce, Sentry, Shopify, Zendesk and Datadog), 10 generic worlds
+such as refunds and inventory, and 3 fault drills. Or generate a fault matrix
+from your declared tools: `npx tracedojo matrix`.
+
+## Test an agent that uses Stripe and Slack
+
+Join two simulations with `+`. The template faults both write calls, checks the
+refund count, the Slack post count and the reaction, and runs as is:
+
+```sh
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.6
+npx tracedojo init --template stripe+slack --out dojo
+npx tracedojo test --out .tracedojo/first-report.json
+```
+
+Then point `dojo/adapter.mjs` at your agent and run `test` again with a new
+`--out` path. A retry that refunds twice prints the exact miss:
+`Exactly one refund exists: expected 1, observed 2.`
 
 ## Gate pull requests
 
