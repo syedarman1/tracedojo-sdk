@@ -578,9 +578,12 @@ Most agents touch more than one service, for example a support agent that refund
 in Stripe and then posts in Slack. Join two simulations with `+`:
 
 ```sh
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.5
 npx --no-install tracedojo init --template stripe+slack --out dojo
-npx --no-install tracedojo test
+npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
+
+Run `npm init -y` first if the folder has no `package.json`.
 
 The workflow merges both services' tools and starting state. Its scenarios fault
 each service's main write (`stripe_create_refund` and `slack_chat_postMessage`), so
