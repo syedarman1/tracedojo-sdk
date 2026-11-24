@@ -13,15 +13,15 @@ Use Node 22.23.1 or later (the repository itself pins 22.23.1).
 For a quick start in an empty directory:
 
 ```sh
-npx tracedojo@0.1.9 init
-npx tracedojo@0.1.9 test
-npx tracedojo@0.1.9 demo
+npx tracedojo@0.1.10 init
+npx tracedojo@0.1.10 test
+npx tracedojo@0.1.10 demo
 ```
 
 For reproducible CI, use an existing npm project or run `npm init -y` first:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.5
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.6
 npx --no-install tracedojo init --ci
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
@@ -37,7 +37,7 @@ setup rolls back its new files and preserves existing files. Use `init` without
 existing workflow. `--out tests/dojo` chooses another starter directory; pass the
 matching `--config` and `--adapter` paths to `test`.
 
-To see a complete failure and fix immediately, run `npx tracedojo@0.1.9 demo`.
+To see a complete failure and fix immediately, run `npx tracedojo@0.1.10 demo`.
 It saves `before.json` and `after.json` in a new directory under `.tracedojo/`.
 Import both in the Workflows page. This scripted demo requires no model key
 or repository checkout.
@@ -578,9 +578,12 @@ Most agents touch more than one service, for example a support agent that refund
 in Stripe and then posts in Slack. Join two simulations with `+`:
 
 ```sh
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.6
 npx --no-install tracedojo init --template stripe+slack --out dojo
-npx --no-install tracedojo test
+npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
+
+Run `npm init -y` first if the folder has no `package.json`.
 
 The workflow merges both services' tools and starting state. Its scenarios fault
 each service's main write (`stripe_create_refund` and `slack_chat_postMessage`), so

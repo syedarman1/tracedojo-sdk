@@ -2,39 +2,40 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Syed Arman
 
-import { parseArgs } from 'node:util';
-import { mkdir, open, readFile, stat, unlink } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { randomUUID } from 'node:crypto';
-import { runWorkflow, type WorkflowAdapter, type WorkflowReport } from './index.js';
+import { parseArgs } from "node:util";
+import { mkdir, open, readFile, stat, unlink } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { randomUUID } from "node:crypto";
+import {
+  runWorkflow,
+  type WorkflowAdapter,
+  type WorkflowBatch,
+  type WorkflowReport,
+} from "./index.js";
 import {
   boundedJson,
   parseWorkflow,
   workflowExitCode,
   commitShaSchema,
-} from './schema.js';
-import { sanitizeWorkflowBatch } from './privacy.js';
-import { parseProxyConfig } from './proxy/config.js';
-import { importLangSmithTrace } from './langsmith.js';
-import { uploadMessage, uploadWorkflowReports } from './upload.js';
-import { createStarter } from './starter.js';
-import { workflowSummary } from './summary.js';
-import { runDemo } from './demo.js';
-import { templateWorlds } from './worlds.js';
-import { createLangSmithStarter } from './langsmith-starter.js';
-import { writeFaultMatrix, testFaultMatrix } from './matrix-cli.js';
-import type { MatrixOptions } from './matrix.js';
-import {
-  connectStdio,
-  DEFAULT_PROXY_PORT,
-  runProxy,
-} from './proxy/run.js';
+} from "./schema.js";
+import { sanitizeWorkflowBatch } from "./privacy.js";
+import { parseProxyConfig } from "./proxy/config.js";
+import { importLangSmithTrace } from "./langsmith.js";
+import { uploadMessage, uploadWorkflowReports } from "./upload.js";
+import { createStarter } from "./starter.js";
+import { workflowSummary } from "./summary.js";
+import { runDemo } from "./demo.js";
+import { templateWorlds } from "./worlds.js";
+import { createLangSmithStarter } from "./langsmith-starter.js";
+import { writeFaultMatrix, testFaultMatrix } from "./matrix-cli.js";
+import type { MatrixOptions } from "./matrix.js";
+import { connectStdio, DEFAULT_PROXY_PORT, runProxy } from "./proxy/run.js";
 import {
   compareWorkflowBatches,
   comparisonExitCode,
   comparisonSummary,
-} from './compare.js';
+} from "./compare.js";
 
 const help = `TraceDojo — test your agent against controlled tool failures
 
@@ -101,8 +102,8 @@ demo exits 0 when it reproduces both the expected failure and the passing fix.
 
 async function readJson(file: string) {
   if ((await stat(file)).size > 5_000_000)
-    throw new Error('JSON exceeds the 5 MB limit.');
-  const input: unknown = JSON.parse(await readFile(file, 'utf8'));
+    throw new Error("JSON exceeds the 5 MB limit.");
+  const input: unknown = JSON.parse(await readFile(file, "utf8"));
   boundedJson(input);
   return input;
 }
@@ -111,26 +112,26 @@ async function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
-      config: { type: 'string' },
-      adapter: { type: 'string' },
-      out: { type: 'string' },
-      trials: { type: 'string' },
-      help: { type: 'boolean', short: 'h' },
-      url: { type: 'string' },
-      project: { type: 'string' },
-      ci: { type: 'boolean' },
-      summary: { type: 'string' },
-      template: { type: 'string' },
-      'draft-only': { type: 'boolean' },
-      base: { type: 'string' },
-      candidate: { type: 'string' },
-      'base-sha': { type: 'string' },
-      'head-sha': { type: 'string' },
-      'virtual-time': { type: 'boolean' },
-      tools: { type: 'string' },
-      faults: { type: 'string' },
-      commit: { type: 'string' },
-      port: { type: 'string' },
+      config: { type: "string" },
+      adapter: { type: "string" },
+      out: { type: "string" },
+      trials: { type: "string" },
+      help: { type: "boolean", short: "h" },
+      url: { type: "string" },
+      project: { type: "string" },
+      ci: { type: "boolean" },
+      summary: { type: "string" },
+      template: { type: "string" },
+      "draft-only": { type: "boolean" },
+      base: { type: "string" },
+      candidate: { type: "string" },
+      "base-sha": { type: "string" },
+      "head-sha": { type: "string" },
+      "virtual-time": { type: "boolean" },
+      tools: { type: "string" },
+      faults: { type: "string" },
+      commit: { type: "string" },
+      port: { type: "string" },
     },
   });
   const command = positionals[0];
@@ -138,39 +139,39 @@ async function main() {
     console.log(help);
     return;
   }
-  if (command === 'matrix' || command === 'test-matrix') {
+  if (command === "matrix" || command === "test-matrix") {
     const allowed =
-      command === 'matrix'
-        ? ['config', 'adapter', 'out', 'tools', 'faults']
-        : ['adapter', 'out', 'trials', 'commit'];
+      command === "matrix"
+        ? ["config", "adapter", "out", "tools", "faults"]
+        : ["adapter", "out", "trials", "commit"];
     if (
-      positionals.length !== (command === 'matrix' ? 1 : 2) ||
+      positionals.length !== (command === "matrix" ? 1 : 2) ||
       Object.keys(values).some((key) => !allowed.includes(key))
     )
-      throw new Error('Unsupported matrix arguments. See --help.');
+      throw new Error("Unsupported matrix arguments. See --help.");
     const input = await readJson(
       resolve(
-        command === 'matrix'
-          ? (values.config ?? 'dojo/workflow.json')
+        command === "matrix"
+          ? (values.config ?? "dojo/workflow.json")
           : positionals[1]!,
       ),
     );
-    const adapter = resolve(values.adapter ?? 'dojo/adapter.mjs');
+    const adapter = resolve(values.adapter ?? "dojo/adapter.mjs");
     if (!/\.(?:mjs|js)$/.test(adapter) || !(await stat(adapter)).isFile())
-      throw new Error('Use a trusted local .mjs or .js adapter module.');
-    if (command === 'matrix') {
+      throw new Error("Use a trusted local .mjs or .js adapter module.");
+    if (command === "matrix") {
       const destination = resolve(
         values.out ?? `.tracedojo/matrices/${randomUUID()}.json`,
       );
       const matrix = await writeFaultMatrix(input, adapter, destination, {
         ...(values.tools !== undefined
-          ? { tools: values.tools.split(',').map((tool) => tool.trim()) }
+          ? { tools: values.tools.split(",").map((tool) => tool.trim()) }
           : {}),
         ...(values.faults !== undefined
           ? {
               faults: values.faults
-                .split(',')
-                .map((fault) => fault.trim()) as MatrixOptions['faults'],
+                .split(",")
+                .map((fault) => fault.trim()) as MatrixOptions["faults"],
             }
           : {}),
       });
@@ -179,7 +180,7 @@ async function main() {
       );
       console.log(`Matrix: ${destination}`);
       console.log(
-        'Review expectations before running test-matrix. Original scenarios are preserved in your source config; only exact-match check overrides carry into generated cases. Prompt injections need a reviewed payload; stale reads are opt-in and require history.',
+        "Review expectations before running test-matrix. Original scenarios are preserved in your source config; only exact-match check overrides carry into generated cases. Prompt injections need a reviewed payload; stale reads are opt-in and require history.",
       );
     } else {
       const destination = resolve(
@@ -187,8 +188,8 @@ async function main() {
       );
       const controller = new AbortController();
       const cancel = () => controller.abort();
-      process.once('SIGINT', cancel);
-      process.once('SIGTERM', cancel);
+      process.once("SIGINT", cancel);
+      process.once("SIGTERM", cancel);
       try {
         const result = await testFaultMatrix(
           input,
@@ -206,44 +207,44 @@ async function main() {
         );
         process.exitCode = result.exitCode;
       } finally {
-        process.removeListener('SIGINT', cancel);
-        process.removeListener('SIGTERM', cancel);
+        process.removeListener("SIGINT", cancel);
+        process.removeListener("SIGTERM", cancel);
       }
     }
     return;
   }
-  if (command === 'proxy' && positionals[1] === 'connect') {
+  if (command === "proxy" && positionals[1] === "connect") {
     if (
       positionals.length !== 3 ||
-      Object.keys(values).some((key) => key !== 'port')
+      Object.keys(values).some((key) => key !== "port")
     )
-      throw new Error('Use: tracedojo proxy connect <server> [--port 7357]');
+      throw new Error("Use: tracedojo proxy connect <server> [--port 7357]");
     const port = Number(
       values.port ?? process.env.TRACEDOJO_PROXY_PORT ?? DEFAULT_PROXY_PORT,
     );
     if (!Number.isInteger(port) || port < 1 || port > 65535)
-      throw new Error('--port must be from 1 to 65535.');
+      throw new Error("--port must be from 1 to 65535.");
     process.exitCode = await connectStdio(positionals[2]!, port);
     return;
   }
-  if (command === 'upload') {
+  if (command === "upload") {
     if (
       positionals.length !== 2 ||
-      Object.keys(values).some((key) => !['url', 'project'].includes(key))
+      Object.keys(values).some((key) => !["url", "project"].includes(key))
     )
-      throw new Error('upload takes one report file and --url/--project.');
+      throw new Error("upload takes one report file and --url/--project.");
     const receipt = await uploadWorkflowReports(
       await readJson(resolve(positionals[1]!)),
       {
-        url: values.url ?? process.env.TRACEDOJO_URL ?? '',
-        project: values.project ?? process.env.TRACEDOJO_PROJECT_ID ?? '',
-        token: process.env.TRACEDOJO_UPLOAD_TOKEN ?? '',
+        url: values.url ?? process.env.TRACEDOJO_URL ?? "",
+        project: values.project ?? process.env.TRACEDOJO_PROJECT_ID ?? "",
+        token: process.env.TRACEDOJO_UPLOAD_TOKEN ?? "",
       },
     );
     console.log(uploadMessage(receipt));
     return;
   }
-  if (command === 'compare') {
+  if (command === "compare") {
     if (
       positionals.length !== 1 ||
       !values.base ||
@@ -251,29 +252,29 @@ async function main() {
       Object.keys(values).some(
         (key) =>
           ![
-            'base',
-            'candidate',
-            'out',
-            'summary',
-            'base-sha',
-            'head-sha',
+            "base",
+            "candidate",
+            "out",
+            "summary",
+            "base-sha",
+            "head-sha",
           ].includes(key),
       )
     )
-      throw new Error('compare requires --base and --candidate report files.');
+      throw new Error("compare requires --base and --candidate report files.");
     if (
-      (values['base-sha'] || values['head-sha']) &&
-      (!/^[a-f0-9]{40}$/.test(values['base-sha'] ?? '') ||
-        !/^[a-f0-9]{40}$/.test(values['head-sha'] ?? ''))
+      (values["base-sha"] || values["head-sha"]) &&
+      (!/^[a-f0-9]{40}$/.test(values["base-sha"] ?? "") ||
+        !/^[a-f0-9]{40}$/.test(values["head-sha"] ?? ""))
     )
       throw new Error(
-        'Provide both --base-sha and --head-sha as full commit hashes.',
+        "Provide both --base-sha and --head-sha as full commit hashes.",
       );
     const readOptional = async (file: string) => {
       try {
         return await readJson(resolve(file));
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT')
+        if ((error as NodeJS.ErrnoException).code === "ENOENT")
           return undefined;
         throw error;
       }
@@ -286,20 +287,20 @@ async function main() {
       values.out ?? `.tracedojo/comparisons/${randomUUID()}.json`,
     );
     await mkdir(dirname(destination), { recursive: true });
-    const output = await open(destination, 'wx', 0o600);
+    const output = await open(destination, "wx", 0o600);
     let summary: Awaited<ReturnType<typeof open>> | undefined;
     let saved = false;
     try {
       if (values.summary) {
         await mkdir(dirname(resolve(values.summary)), { recursive: true });
-        summary = await open(resolve(values.summary), 'wx', 0o600);
+        summary = await open(resolve(values.summary), "wx", 0o600);
       }
-      const source = values['base-sha']
-        ? { baseSha: values['base-sha'], headSha: values['head-sha'] }
+      const source = values["base-sha"]
+        ? { baseSha: values["base-sha"], headSha: values["head-sha"] }
         : undefined;
       await output.writeFile(
         JSON.stringify({ ...result, ...(source ? { source } : {}) }, null, 2) +
-          '\n',
+          "\n",
       );
       if (summary) await summary.writeFile(comparisonSummary(result));
       saved = true;
@@ -316,46 +317,49 @@ async function main() {
     return;
   }
   const allowed =
-    command === 'test'
-      ? ['config', 'adapter', 'out', 'trials', 'summary', 'commit']
-      : command === 'proxy'
-        ? ['config', 'out', 'trials', 'summary', 'commit', 'port']
-      : command === 'init'
-        ? ['out', 'ci', 'template', 'virtual-time']
-        : command === 'templates'
-          ? []
-          : command === 'import-langsmith'
-            ? ['out', 'draft-only']
-            : ['out'];
+    command === "test"
+      ? ["config", "adapter", "out", "trials", "summary", "commit"]
+      : command === "proxy"
+        ? ["config", "out", "trials", "summary", "commit", "port"]
+        : command === "init"
+          ? ["out", "ci", "template", "virtual-time"]
+          : command === "templates"
+            ? []
+            : command === "import-langsmith"
+              ? ["out", "draft-only"]
+              : ["out"];
   if (
     Object.keys(values).some((key) => !allowed.includes(key)) ||
-    positionals.length !== (command === 'import-langsmith' ? 2 : 1)
+    positionals.length !== (command === "import-langsmith" ? 2 : 1)
   )
-    throw new Error('Unsupported arguments. See --help.');
-  if (command === 'templates') {
+    throw new Error("Unsupported arguments. See --help.");
+  if (command === "templates") {
     for (const world of templateWorlds)
       console.log(`${world.id.padEnd(16)} ${world.title}`);
+    console.log(
+      "\nJoin two simulations with + to test an agent that uses both, like --template stripe+slack.",
+    );
     return;
   }
-  if (command === 'init') {
-    const directory = resolve(values.out ?? 'dojo');
+  if (command === "init") {
+    const directory = resolve(values.out ?? "dojo");
     await createStarter(
       directory,
       values.ci ?? false,
       values.template,
-      values['virtual-time'] ?? false,
+      values["virtual-time"] ?? false,
     );
     console.log(
-      `Created ${directory}. See its README.md to run the example and connect your agent.${values.ci ? '\nCreated test/comment workflows and .github/tracedojo/comment.cjs. Commit these files, your SDK dependency, and lockfile to the default branch before running PR checks.' : ''}`,
+      `Created ${directory}. See its README.md to run the example and connect your agent.${values.ci ? "\nCreated test/comment workflows and .github/tracedojo/comment.cjs. Commit these files, your SDK dependency, and lockfile to the default branch before running PR checks." : ""}`,
     );
     return;
   }
-  if (command === 'demo') {
+  if (command === "demo") {
     const directory = resolve(values.out ?? `.tracedojo/demo-${randomUUID()}`);
     await mkdir(dirname(directory), { recursive: true });
     const { before, after } = await runDemo(directory);
     console.log(
-      'A booking succeeded. Its confirmation timed out. The agent retried.',
+      "A booking succeeded. Its confirmation timed out. The agent retried.",
     );
     console.log(
       `Before: ${before.runs[0]!.status} — ${before.runs[0]!.metrics.mutations} committed writes; duplicate booking.`,
@@ -364,20 +368,20 @@ async function main() {
       `After:  ${after.runs[0]!.status} — ${after.runs[0]!.metrics.mutations} committed write; the retry reused the original booking.`,
     );
     console.log(
-      'Both no-fault controls passed. Scripted example; no model calls.',
+      "Both no-fault controls passed. Scripted example; no model calls.",
     );
     console.log(
       `Open before.json and after.json from ${directory} in a project at https://tracedojo.com (sign-in required), using Workflows → Preview report. Preview does not save reports.\nLocal dashboard and upload instructions: https://tracedojo.com/docs#inspect-and-save-reports`,
     );
     return;
   }
-  if (!['test', 'proxy', 'import-langsmith'].includes(command))
-    throw new Error('Unknown command. See --help.');
-  if (!values.out && command === 'import-langsmith')
+  if (!["test", "proxy", "import-langsmith"].includes(command))
+    throw new Error("Unknown command. See --help.");
+  if (!values.out && command === "import-langsmith")
     throw new Error(
-      'Choose a new --out directory (or file with --draft-only). Existing files are never overwritten.',
+      "Choose a new --out directory (or file with --draft-only). Existing files are never overwritten.",
     );
-  if (command === 'import-langsmith' && !values['draft-only']) {
+  if (command === "import-langsmith" && !values["draft-only"]) {
     const result = await createLangSmithStarter(
       await readJson(resolve(positionals[1]!)),
       resolve(values.out!),
@@ -390,60 +394,57 @@ async function main() {
   let workflow;
   let proxyConfig: unknown;
   const trials = Number(values.trials ?? 1);
-  if (command === 'proxy') {
+  if (command === "proxy") {
     if (values.commit !== undefined) commitShaSchema.parse(values.commit);
-    values.config ??= 'dojo/proxy.json';
+    values.config ??= "dojo/proxy.json";
     proxyConfig = parseProxyConfig(await readJson(resolve(values.config)));
     if (!Number.isInteger(trials) || trials < 1 || trials > 20)
-      throw new Error('--trials must be from 1 to 20.');
-    if (
-      values.port !== undefined &&
-      !/^\d{1,5}$/.test(values.port)
-    )
-      throw new Error('--port must be a number.');
+      throw new Error("--trials must be from 1 to 20.");
+    if (values.port !== undefined && !/^\d{1,5}$/.test(values.port))
+      throw new Error("--port must be a number.");
   }
-  if (command === 'test') {
+  if (command === "test") {
     if (values.commit !== undefined) commitShaSchema.parse(values.commit);
-    values.config ??= 'dojo/workflow.json';
-    values.adapter ??= 'dojo/adapter.mjs';
+    values.config ??= "dojo/workflow.json";
+    values.adapter ??= "dojo/adapter.mjs";
     workflow = parseWorkflow(await readJson(resolve(values.config)));
     if (!Number.isInteger(trials) || trials < 1 || trials > 20)
-      throw new Error('--trials must be from 1 to 20.');
+      throw new Error("--trials must be from 1 to 20.");
     if (
       !/\.(?:mjs|js)$/.test(values.adapter) ||
       !(await stat(resolve(values.adapter))).isFile()
     )
-      throw new Error('Use a trusted local .mjs or .js adapter module.');
+      throw new Error("Use a trusted local .mjs or .js adapter module.");
   }
   const destination = resolve(
     values.out ?? `.tracedojo/reports/${randomUUID()}.json`,
   );
   await mkdir(dirname(destination), { recursive: true });
-  const output = await open(destination, 'wx', 0o600);
+  const output = await open(destination, "wx", 0o600);
   let saved = false;
   let summaryOutput: Awaited<ReturnType<typeof open>> | undefined;
   const controller = new AbortController();
   const cancel = () => controller.abort();
-  process.once('SIGINT', cancel);
-  process.once('SIGTERM', cancel);
+  process.once("SIGINT", cancel);
+  process.once("SIGTERM", cancel);
   try {
     // Reserve every destination before invoking customer code or a paid model.
     if (values.summary) {
       await mkdir(dirname(resolve(values.summary)), { recursive: true });
-      summaryOutput = await open(resolve(values.summary), 'wx', 0o600);
+      summaryOutput = await open(resolve(values.summary), "wx", 0o600);
     }
-    if (command === 'import-langsmith') {
+    if (command === "import-langsmith") {
       const draft = importLangSmithTrace(
         await readJson(resolve(positionals[1]!)),
       );
-      await output.writeFile(JSON.stringify(draft, null, 2) + '\n');
+      await output.writeFile(JSON.stringify(draft, null, 2) + "\n");
       saved = true;
       console.log(
         `Saved a review draft with ${draft.observedCalls.length} observed tool calls. Supply starting state, tools, and checks before running.`,
       );
       return;
     }
-    if (command === 'proxy') {
+    if (command === "proxy") {
       const batch = sanitizeWorkflowBatch(
         await runProxy(proxyConfig, {
           configDir: dirname(resolve(values.config!)),
@@ -455,21 +456,10 @@ async function main() {
             console.log(`Proxy listening on http://127.0.0.1:${port}`),
         }),
       );
-      await output.writeFile(JSON.stringify(batch, null, 2) + '\n');
+      await output.writeFile(JSON.stringify(batch, null, 2) + "\n");
       saved = true;
       if (summaryOutput) await summaryOutput.writeFile(workflowSummary(batch));
-      console.log(`Control: ${batch.baseline.status}`);
-      for (const run of batch.runs) {
-        console.log(`${run.scenario.title}: ${run.status}`);
-        const untested = unreachedLine(run);
-        if (untested) console.log(`  ${untested}`);
-        for (const check of run.assertions.filter((c) => !c.passed))
-          console.log(`  ${failureLine(check)}`);
-      }
-      if (batch.skippedReason) console.log(batch.skippedReason);
-      console.log(
-        `Completed ${batch.runs.length}/${batch.planned} fault trials. Report: ${destination}`,
-      );
+      printBatch(batch, destination);
       process.exitCode = workflowExitCode(batch);
       return;
     }
@@ -478,7 +468,7 @@ async function main() {
       adapter = await import(pathToFileURL(resolve(values.adapter!)).href);
     } catch {
       throw new Error(
-        'Could not load the adapter. Check its syntax and installed dependencies.',
+        "Could not load the adapter. Check its syntax and installed dependencies.",
       );
     }
     const batch = sanitizeWorkflowBatch(
@@ -488,25 +478,14 @@ async function main() {
         commitSha: values.commit,
       }),
     );
-    await output.writeFile(JSON.stringify(batch, null, 2) + '\n');
+    await output.writeFile(JSON.stringify(batch, null, 2) + "\n");
     saved = true;
     if (summaryOutput) await summaryOutput.writeFile(workflowSummary(batch));
-    console.log(`Control: ${batch.baseline.status}`);
-    for (const run of batch.runs) {
-      console.log(`${run.scenario.title}: ${run.status}`);
-      const untested = unreachedLine(run);
-      if (untested) console.log(`  ${untested}`);
-      for (const check of run.assertions.filter((c) => !c.passed))
-        console.log(`  ${failureLine(check)}`);
-    }
-    if (batch.skippedReason) console.log(batch.skippedReason);
-    console.log(
-      `Completed ${batch.runs.length}/${batch.planned} fault trials. Report: ${destination}`,
-    );
+    printBatch(batch, destination);
     process.exitCode = workflowExitCode(batch);
   } finally {
-    process.removeListener('SIGINT', cancel);
-    process.removeListener('SIGTERM', cancel);
+    process.removeListener("SIGINT", cancel);
+    process.removeListener("SIGTERM", cancel);
     await output.close();
     await summaryOutput?.close();
     if (!saved) await unlink(destination);
@@ -519,10 +498,28 @@ main().catch((error: unknown) => {
   const safe =
     error instanceof Error && error.constructor === Error
       ? error.message
-      : 'Invalid input or output. Check the file paths, JSON, and workflow contract.';
+      : "Invalid input or output. Check the file paths, JSON, and workflow contract.";
   console.error(safe);
   process.exitCode = 2;
 });
+
+/** Prints each trial with the checks that failed, starting with the control. */
+function printBatch(batch: WorkflowBatch, destination: string) {
+  console.log(`Control: ${batch.baseline.status}`);
+  for (const check of batch.baseline.assertions.filter((c) => !c.passed))
+    console.log(`  ${failureLine(check)}`);
+  for (const run of batch.runs) {
+    console.log(`${run.scenario.title}: ${run.status}`);
+    const untested = unreachedLine(run);
+    if (untested) console.log(`  ${untested}`);
+    for (const check of run.assertions.filter((c) => !c.passed))
+      console.log(`  ${failureLine(check)}`);
+  }
+  if (batch.skippedReason) console.log(batch.skippedReason);
+  console.log(
+    `Completed ${batch.runs.length}/${batch.planned} fault trials. Report: ${destination}`,
+  );
+}
 
 /** A failed check with its numbers, e.g. "Refunds: expected 1, observed 2." */
 function failureLine(check: {
@@ -531,7 +528,7 @@ function failureLine(check: {
   expected?: unknown;
   actual?: unknown;
 }): string {
-  if (!('expected' in check) || !('actual' in check))
+  if (!("expected" in check) || !("actual" in check))
     return `${check.label}: ${check.detail}`;
   const short = (value: unknown) => {
     const text = JSON.stringify(value) ?? String(value);
@@ -542,11 +539,11 @@ function failureLine(check: {
 
 /** Why an inconclusive trial tested nothing: the fault's tool was never called. */
 function unreachedLine(run: WorkflowReport): string | undefined {
-  if (run.status !== 'inconclusive' || run.issue || run.fault.triggered)
+  if (run.status !== "inconclusive" || run.issue || run.fault.triggered)
     return undefined;
   const fault = run.scenario.fault;
-  if (!('tool' in fault))
-    return 'The fault never fired, so this scenario was not tested.';
+  if (!("tool" in fault))
+    return "The fault never fired, so this scenario was not tested.";
   const reached =
     fault.occurrence > 1
       ? `never made call ${fault.occurrence} to ${fault.tool}`

@@ -4,7 +4,7 @@ This is a scripted booking agent with synthetic data. It makes no model calls.
 Run from your repository root, with `@tracedojo/sdk` installed:
 
 ```sh
-npx --no-install tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs
+npx --no-install tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs --out .tracedojo/first-report.json
 ```
 
 If you chose another directory, replace `dojo` in the command. Each invocation

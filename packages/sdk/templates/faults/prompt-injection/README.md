@@ -1,6 +1,6 @@
 # Instructions in tool output
 
-Run `npx --no-install tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs`
+Run `npx --no-install tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs --out .tracedojo/first-report.json`
 from the parent of `dojo` (adjust the paths if you chose another directory).
 
 The scripted reference passes. In `adapter.mjs`, set `trustToolInstructions` to
