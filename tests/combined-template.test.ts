@@ -22,6 +22,13 @@ test("init --template stripe+slack runs with tracedojo test and catches both dou
     );
     const fixed = run("test", "--out", "fixed.json");
     assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
+    // Re-running the documented command keeps the first report and says what to do.
+    const again = run("test", "--out", "fixed.json");
+    assert.equal(again.status, 2);
+    assert.equal(
+      again.stderr.trim(),
+      "fixed.json already exists, and TraceDojo never overwrites a saved report. Pass a new --out path, or delete the old file and run again.",
+    );
     const report = JSON.parse(await readFile(join(dir, "fixed.json"), "utf8"));
     // Every scenario faults a write the reference agent makes, so all trigger.
     assert.ok(report.runs.length >= 8 && report.runs.length <= 10);

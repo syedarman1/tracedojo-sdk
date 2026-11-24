@@ -73,7 +73,7 @@ def test_test_fails_on_a_duplicate_booking_and_never_overwrites(dojo: Path):
     assert "expected 1, observed 2." in result.stdout
     before = (dojo / "report.json").read_text()
     again = cli("test", "--out", "report.json", cwd=dojo)
-    assert again.returncode == 2 and "Refusing to overwrite" in again.stderr
+    assert again.returncode == 2 and "never overwrites a saved report" in again.stderr
     assert (dojo / "report.json").read_text() == before
 
 
