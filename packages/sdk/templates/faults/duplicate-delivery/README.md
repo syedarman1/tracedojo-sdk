@@ -1,6 +1,6 @@
 # One request delivered twice
 
-Run `npx --no-install tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs`
+Run `npx --no-install tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs --out .tracedojo/first-report.json`
 from the parent of `dojo` (adjust paths for your chosen directory).
 
 The scripted reference passes. Set `deduplicate = false` in `adapter.mjs`: the

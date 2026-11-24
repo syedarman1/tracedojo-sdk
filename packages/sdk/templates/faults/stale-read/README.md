@@ -1,6 +1,6 @@
 # Read your write through a stale replica
 
-Run `npx --no-install tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs`
+Run `npx --no-install tracedojo test --config dojo/workflow.json --adapter dojo/adapter.mjs --out .tracedojo/first-report.json`
 from the parent of `dojo` (adjust paths for your chosen directory).
 
 The scripted reference checks the version returned by the write and re-reads when
