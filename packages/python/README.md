@@ -111,7 +111,7 @@ batch = run_workflow_sync(workflow_dict, adapter_module, trials=3, commit_sha=No
 Faults: `timeout_before`, `timeout_after`, `unavailable`, `malformed`,
 `permission_revoked`, `duplicate_delivery`, `stale_read`, `prompt_injection`, each
 with `occurrence` and `repeat`. Checks: `count`, `equals` (state or completion),
-`unchanged`, `forbidden_tool`, `tool_calls`, `tool_order`. Semantics, limits, and
+`unchanged`, `forbidden_tool`, `tool_calls`, `tool_order`, `text`. Semantics, limits, and
 statuses are identical to the JavaScript SDK.
 
 Model faults (`rate_limited`, `server_error`, `model_timeout`, `stream_cut`,

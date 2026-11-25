@@ -14,6 +14,7 @@ export const virtualClockSchema = z.strictObject({
 });
 const name = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/);
 const text = z.string().trim().min(1).max(2000);
+const phrase = z.string().min(1).max(200);
 const object = z.record(z.string(), z.json());
 const pointer = z
   .string()
@@ -196,6 +197,20 @@ export const checkSchema = z.discriminatedUnion('type', [
     type: z.literal('unchanged'),
     path: pointer,
   }),
+  z
+    .strictObject({
+      id: name,
+      label: text,
+      type: z.literal('text'),
+      source: z.enum(['state', 'completion']).default('state'),
+      path: pointer,
+      includes: z.array(phrase).min(1).max(20).optional(),
+      excludes: z.array(phrase).min(1).max(20).optional(),
+    })
+    .refine(
+      (c) => c.includes !== undefined || c.excludes !== undefined,
+      'Set includes, excludes, or both.',
+    ),
 ]);
 export type WorkflowCheck = z.infer<typeof checkSchema>;
 const checks = z
@@ -319,6 +334,26 @@ function at(value: unknown, path: string): { found: boolean; value?: Json } {
     : { found: true, value: current as Json };
 }
 
+/** Every string under a value, depth first with object keys sorted, one per line. */
+function textOf(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(textOf).filter(Boolean).join('\n');
+  if (value && typeof value === 'object')
+    return Object.keys(value)
+      .sort()
+      .map((key) => textOf((value as Record<string, unknown>)[key]))
+      .filter(Boolean)
+      .join('\n');
+  return '';
+}
+/** Case-insensitive for A-Z only, so JavaScript and Python agree on every input. */
+const asciiLower = (value: string) =>
+  value.replace(/[A-Z]/g, (c) => c.toLowerCase());
+function excerpt(value: string): string {
+  const chars = Array.from(value);
+  return chars.length > 500 ? `${chars.slice(0, 500).join('')}…` : value;
+}
+
 export function evaluateChecks(
   definitions: WorkflowCheck[],
   initial: State,
@@ -395,6 +430,42 @@ export function evaluateChecks(
         actual: calls.map((event) => event.tool ?? null),
         expected: check.tools,
         evidenceIds: matched.map((event) => event.id),
+      };
+    }
+    if (check.type === 'text') {
+      const observed = at(
+        check.source === 'completion' ? completion : final,
+        check.path,
+      );
+      const where = check.path || '/';
+      const content = observed.found ? textOf(observed.value) : '';
+      const lower = asciiLower(content);
+      const missing = (check.includes ?? []).find(
+        (p) => !lower.includes(asciiLower(p)),
+      );
+      const present = (check.excludes ?? []).find((p) =>
+        lower.includes(asciiLower(p)),
+      );
+      const passed = observed.found && !missing && !present;
+      return {
+        id: check.id,
+        label: check.label,
+        passed,
+        detail: !observed.found
+          ? `Missing value at ${where}.`
+          : missing !== undefined
+            ? `The text at ${where} does not include ${JSON.stringify(missing)}.`
+            : present !== undefined
+              ? `The text at ${where} includes ${JSON.stringify(present)}, which it should not.`
+              : 'The text includes every required phrase and none of the forbidden ones.',
+        ...(observed.found ? { actual: excerpt(content) } : {}),
+        evidenceIds: events
+          .filter((e) =>
+            check.source === 'completion'
+              ? e.kind === 'completion'
+              : e.kind === 'mutation',
+          )
+          .map((e) => e.id),
       };
     }
     const prior = at(initial, check.path);

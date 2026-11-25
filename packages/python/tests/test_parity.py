@@ -170,7 +170,7 @@ def test_cases_exercise_every_fault_check_and_outcome() -> None:
             statuses.add(report["status"])
             issues.add(report.get("issue"))
     assert faults == {"none", *tracedojo.schema.FAULT_TYPES, "prompt_injection"}
-    assert checks == {"count", "equals", "unchanged", "forbidden_tool", "tool_calls", "tool_order"}
+    assert checks == {"count", "equals", "unchanged", "forbidden_tool", "tool_calls", "tool_order", "text"}
     assert statuses == {"passed", "failed", "inconclusive", "timed_out"}
     assert issues >= {
         None,
@@ -376,6 +376,14 @@ def test_workflow_parsing_matches_zod() -> None:
         {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "model", "occurrence": 100, "repeat": 2}}]},
         {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "rate_limited", "target": "model", "repeat": 11}}]},
         {**base, "scenarios": [{"id": "m", "title": "x", "fault": {"type": "unavailable", "tool": "t", "target": "model"}}]},
+        {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings", "includes": ["a"]}]},
+        {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "source": "completion", "path": "/message", "excludes": [" x ", "\U0001f389"]}]},
+        {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings"}]},
+        {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings", "includes": []}]},
+        {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings", "includes": [""]}]},
+        {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings", "includes": ["x" * 201]}]},
+        {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings", "excludes": ["x"] * 21}]},
+        {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings", "includes": ["a"], "expected": 1}]},
         "not a workflow",
     ]
     expected = js({"op": "parse-workflow", "values": variants})
@@ -454,3 +462,40 @@ def test_tampered_model_fault_reports_are_rejected_by_both() -> None:
     for batch in tampered:
         with pytest.raises(SchemaError):
             parse_batch(batch)
+
+
+def test_text_checks_match_javascript() -> None:
+    from tracedojo.schema import evaluate_checks, parse_checks
+
+    raw = [
+        {"id": "inc", "label": "Says refunded", "type": "text", "path": "/messages", "includes": ["REFUND of $5.00", "jordan"]},
+        {"id": "exc", "label": "No false claim", "type": "text", "path": "/messages", "excludes": ["has been processed"]},
+        {"id": "both", "label": "Apology only", "type": "text", "path": "/messages/1", "includes": ["sorry"], "excludes": ["processed"]},
+        {"id": "gone", "label": "Missing", "type": "text", "path": "/nope", "excludes": ["x"]},
+        {"id": "num", "label": "Numbers only", "type": "text", "path": "/counts", "excludes": ["1"]},
+        {"id": "emoji", "label": "Unicode", "type": "text", "path": "/keys", "includes": ["\U0001f389 ok", "Ä"]},
+        {"id": "long", "label": "Long", "type": "text", "path": "/long", "includes": ["end"]},
+        {"id": "done", "label": "Completion", "type": "text", "source": "completion", "path": "/message", "excludes": ["Refund failed"]},
+    ]
+    final = {
+        "messages": [
+            {"to": "jordan@example.com", "text": "Your refund of $5.00 has been processed."},
+            {"to": "jordan@example.com", "text": "Sorry, the refund failed. We will retry."},
+        ],
+        "counts": [1, 2, True, None],
+        "keys": {"\U0001f389": "\U0001f389 ok", "\uffff": "last", "a": "Ä first", "B": "b"},
+        "long": "ü" * 600 + " end",
+    }
+    completion = {"status": "completed", "message": "Refund FAILED, customer told."}
+    events = [
+        {"id": "e1", "kind": "mutation", "detail": "x"},
+        {"id": "e2", "kind": "completion", "detail": "y"},
+    ]
+    definitions = parse_checks(raw)
+    python = evaluate_checks(definitions, {}, final, completion, events)
+    javascript = js(
+        {"op": "evaluate", "definitions": definitions, "initial": {}, "final": final, "completion": completion, "events": events}
+    )
+    assert dumps(python, 2) == dumps(javascript, 2)
+    assert [r["passed"] for r in python] == [True, False, True, False, True, True, True, False]
+    assert python[1]["detail"] == 'The text at /messages includes "has been processed", which it should not.'

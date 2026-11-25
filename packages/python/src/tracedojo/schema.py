@@ -22,6 +22,7 @@ from ._json import (
     is_integer,
     is_number,
     js_len,
+    js_string,
     stable_json,
 )
 
@@ -347,7 +348,48 @@ def parse_check(value: object) -> dict[str, Any]:
     if kind == "unchanged":
         data = _strict(value, base + ("path",))
         return {"id": _name(data["id"]), "label": _text(data["label"]), "type": kind, "path": _pointer(data["path"])}
+    if kind == "text":
+        data = _strict(value, base + ("path",), ("source", "includes", "excludes"))
+        check = {
+            "id": _name(data["id"]),
+            "label": _text(data["label"]),
+            "type": kind,
+            "source": _enum(data.get("source", "state"), ("state", "completion")),
+            "path": _pointer(data["path"]),
+        }
+        for key in ("includes", "excludes"):
+            if key in data:
+                check[key] = _array(data[key], 1, 20, _phrase)
+        if "includes" not in check and "excludes" not in check:
+            _fail("Set includes, excludes, or both.")
+        return check
     return _fail()
+
+
+def _phrase(value: object) -> str:
+    text = _string(value, 200)
+    return text if text else _fail()  # type: ignore[return-value]
+
+
+_UPPER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
+
+
+def _text_of(value: object) -> str:
+    """Every string under a value, depth first with keys in UTF-16 order, one per line."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        parts = [_text_of(v) for v in value]
+    elif isinstance(value, dict):
+        keys = sorted(value, key=lambda k: k.encode("utf-16-be", "surrogatepass"))
+        parts = [_text_of(value[k]) for k in keys]
+    else:
+        return ""
+    return "\n".join(p for p in parts if p)
+
+
+def _excerpt(value: str) -> str:
+    return value[:500] + "\u2026" if len(value) > 500 else value
 
 
 def parse_checks(value: object) -> list[dict[str, Any]]:
@@ -552,6 +594,30 @@ def evaluate_checks(
                     "evidenceIds": [e["id"] for e in matched],
                 }
             )
+            continue
+        if kind == "text":
+            from_completion = check["source"] == "completion"
+            found, observed = _at(completion if from_completion else final, check["path"])
+            where = check["path"] or "/"
+            content = _text_of(observed) if found else ""
+            lower = content.translate(_UPPER)
+            missing = next((p for p in check.get("includes", []) if p.translate(_UPPER) not in lower), None)
+            present = next((p for p in check.get("excludes", []) if p.translate(_UPPER) in lower), None)
+            passed = found and missing is None and present is None
+            if not found:
+                detail = f"Missing value at {where}."
+            elif missing is not None:
+                detail = f"The text at {where} does not include {js_string(missing)}."
+            elif present is not None:
+                detail = f"The text at {where} includes {js_string(present)}, which it should not."
+            else:
+                detail = "The text includes every required phrase and none of the forbidden ones."
+            text_result: dict[str, Any] = {"id": check["id"], "label": check["label"], "passed": passed, "detail": detail}
+            if found:
+                text_result["actual"] = _excerpt(content)
+            text_kind = "completion" if from_completion else "mutation"
+            text_result["evidenceIds"] = [e["id"] for e in events if e["kind"] == text_kind]
+            results.append(text_result)
             continue
         from_completion = kind == "equals" and check["source"] == "completion"
         prior_found, prior = _at(initial, check["path"])

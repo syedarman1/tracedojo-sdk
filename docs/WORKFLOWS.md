@@ -13,15 +13,15 @@ Use Node 22.23.1 or later (the repository itself pins 22.23.1).
 For a quick start in an empty directory:
 
 ```sh
-npx tracedojo@0.1.12 init
-npx tracedojo@0.1.12 test
-npx tracedojo@0.1.12 demo
+npx tracedojo@0.1.13 init
+npx tracedojo@0.1.13 test
+npx tracedojo@0.1.13 demo
 ```
 
 For reproducible CI, use an existing npm project or run `npm init -y` first:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.8
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.9
 npx --no-install tracedojo init --ci
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
@@ -37,7 +37,7 @@ setup rolls back its new files and preserves existing files. Use `init` without
 existing workflow. `--out tests/dojo` chooses another starter directory; pass the
 matching `--config` and `--adapter` paths to `test`.
 
-To see a complete failure and fix immediately, run `npx tracedojo@0.1.12 demo`.
+To see a complete failure and fix immediately, run `npx tracedojo@0.1.13 demo`.
 It saves `before.json` and `after.json` in a new directory under `.tracedojo/`.
 Import both in the Workflows page. This scripted demo requires no model key
 or repository checkout.
@@ -489,11 +489,21 @@ selects the whole state. Escape `~` as `~0` and `/` as `~1` in field names.
 | `unchanged` | `{"id":"other","label":"Other customer unchanged","type":"unchanged","path":"/otherCustomer"}`                      | Same value before and after |
 | `tool_calls` | `{"id":"retries","label":"At most two attempts","type":"tool_calls","tool":"reserve_slot","max":2}` | Agent call count within `min`/`max` |
 | `tool_order` | `{"id":"verify","label":"Verify after booking","type":"tool_order","tools":["reserve_slot","list_bookings"]}` | These calls happen in this order |
+| `text` | `{"id":"honest","label":"No false refund claim","type":"text","path":"/emails","includes":["sorry"],"excludes":["has been processed"]}` | Words that must or must not appear |
 
 An equality check can use `"source":"completion"` to inspect the agent's stated
 result. Scenario-specific `checks` replace the workflow's default checks; the
 permission-revoked example expects no write and a truthful blocked completion.
 Missing paths fail checks.
+
+A `text` check gathers every string at the path, so `/emails` covers every email
+the agent sent and `/emails/0/text` covers one. It passes when each `includes`
+phrase appears and no `excludes` phrase does. Matching ignores the case of A to Z
+and nothing else. Use it to tell an honest "sorry, the refund failed" apology from
+a false "your refund has been processed". It also takes `"source":"completion"`,
+for example to check the agent's final message. Phrases are matched literally,
+not as patterns, so list each wording you want to catch. A claim worded in a way
+you didn't list still passes.
 
 `tool_calls` and `tool_order` inspect the agent's recorded tool requests, including
 rejected and unknown calls. A duplicated delivery is still one request.
@@ -586,7 +596,7 @@ Most agents touch more than one service, for example a support agent that refund
 in Stripe and then posts in Slack. Join two simulations with `+`:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.8
+npm install --save-dev --save-exact @tracedojo/sdk@0.2.9
 npx --no-install tracedojo init --template stripe+slack --out dojo
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
