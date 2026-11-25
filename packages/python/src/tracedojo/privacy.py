@@ -30,7 +30,7 @@ _ASSIGNMENT = re.compile(
     _FLAGS,
 )
 _EMAIL = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", _FLAGS)
-_RESERVED_EMAIL = re.compile(r"@(?:[a-z0-9.-]+\.)?(?:example|invalid)\Z", _FLAGS)
+_RESERVED_EMAIL = re.compile(r"@(?:[a-z0-9.-]+\.)?(?:example(?:\.(?:com|net|org))?|invalid|test|localhost)\Z", _FLAGS)
 _PRIVATE_KEY = re.compile(r"authorization|password|secret|api[_-]?key|access[_-]?token|refresh[_-]?token", _FLAGS)
 
 
