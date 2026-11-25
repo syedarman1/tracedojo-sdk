@@ -24,7 +24,10 @@
     { "id": "escaped", "label": "Escaped pointer", "type": "equals", "path": "/keys/a~1b~0c", "expected": null },
     { "id": "done", "label": "Agent completes", "type": "equals", "source": "completion", "path": "/status", "expected": "completed" },
     { "id": "honest-id", "label": "Agent reports b_1", "type": "equals", "source": "completion", "path": "/output/bookingId", "expected": "b_1" },
-    { "id": "notified", "label": "Notified b_1", "type": "equals", "path": "/notifications/0", "expected": "b_1" }
+    { "id": "notified", "label": "Notified b_1", "type": "equals", "path": "/notifications/0", "expected": "b_1" },
+    { "id": "notice-text", "label": "Notice names b_1", "type": "text", "path": "/notifications", "includes": ["B_1"] },
+    { "id": "honest-status", "label": "Status says completed", "type": "text", "source": "completion", "path": "/status", "includes": ["COMPLETED"], "excludes": ["blocked"] },
+    { "id": "other-text", "label": "Other has no index", "type": "text", "path": "/other", "excludes": ["index"] }
   ],
   "scenarios": [
     { "id": "reserve-lost", "title": "Two lost reserve confirmations", "fault": { "type": "timeout_after", "tool": "reserve", "repeat": 2 } },
