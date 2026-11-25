@@ -148,6 +148,14 @@ and independent outcome checks; recorded outputs are not correctness guarantees.
 Model requests use your provider account and may incur charges. Start with one
 control and one fault, inspect the resulting evidence, then expand the suite.
 
+Each trial stops after `limits.timeoutMs`, which defaults to 5 seconds for scripted
+agents. A model-backed loop usually needs longer, so set it in `workflow.json`, for
+example `"limits": { "timeoutMs": 120000 }`. It accepts up to 30 minutes.
+
+If you use a shipped simulation, `stripe.toolDefinitions()` returns each tool's
+name, description and a plain JSON Schema for its arguments, ready to pass to
+OpenAI, Anthropic or a local server's tool-calling API.
+
 ## Test an unmodified agent through the proxy
 
 `tracedojo proxy` tests an agent process as it is, without `context.call`. It sits
@@ -723,6 +731,8 @@ security attestation of untrusted PR code.
   means the command's checks passed, not a guarantee of production reliability.
 - **Control fails:** fix ordinary execution before interpreting resilience. No
   fault trials run until the control passes.
+- **Trials time out with a real model:** raise `limits.timeoutMs` (default 5000,
+  up to 1800000).
 - **Fault not reached:** target a tool and occurrence the agent actually calls;
   skipped faults do not establish recovery.
 

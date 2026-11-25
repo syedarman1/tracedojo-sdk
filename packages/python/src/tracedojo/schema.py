@@ -362,7 +362,7 @@ def _limits(value: object) -> dict[str, int]:
     return {
         "maxToolCalls": _int(data.get("maxToolCalls", 20), 1, 100),
         "maxRepeatedCalls": _int(data.get("maxRepeatedCalls", 5), 1, 100),
-        "timeoutMs": _int(data.get("timeoutMs", 5000), 1, 60000),
+        "timeoutMs": _int(data.get("timeoutMs", 5000), 1, 1800000),
     }
 
 
