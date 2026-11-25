@@ -113,7 +113,7 @@
   "tools": {
     "gmail_messages_list": {
       "kind": "read",
-      "description": "users.messages.list. Instead of a q string, takes the search operators rfc822msgid: and label: as fields. Each result has only id and threadId; messages is omitted when nothing matches.",
+      "description": "users.messages.list. Instead of a q string, takes the fields rfc822msgid (a Message-ID without angle brackets) and labelId, which stand in for the rfc822msgid: and label: search operators. Each result has only id and threadId; messages is omitted when nothing matches.",
       "input": {
         "type": "object",
         "properties": {

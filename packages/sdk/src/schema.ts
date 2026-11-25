@@ -230,7 +230,7 @@ export const workflowSchema = z
       .strictObject({
         maxToolCalls: z.number().int().min(1).max(100).default(20),
         maxRepeatedCalls: z.number().int().min(1).max(100).default(5),
-        timeoutMs: z.number().int().min(1).max(60000).default(5000),
+        timeoutMs: z.number().int().min(1).max(1800000).default(5000),
       })
       .default({ maxToolCalls: 20, maxRepeatedCalls: 5, timeoutMs: 5000 }),
   })

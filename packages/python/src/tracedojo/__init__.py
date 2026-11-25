@@ -28,7 +28,7 @@ from .schema import (
 )
 from .signal import Cancelled, Signal
 
-__version__ = "0.1.6"
+__version__ = "0.1.7"
 
 __all__ = [
     "Adapter",

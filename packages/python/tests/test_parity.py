@@ -272,6 +272,7 @@ def test_sanitizer_matches_javascript() -> None:
         "bearer xyz",
         "password = 'hunter2', API-KEY: \"q w\" secret=s3;x",
         "write to Jane.Doe@Company.COM or ops@example.com or a@b.invalid",
+        "jordan@example.com, x@mail.example.org, y@example.net, z@ci.test, q@example.company.com",
         "épassword=1 x_password=2 passwordless",
         {"Authorization": "x", "nested": {"api_key": 1, "safe": "sb_secret_abc"}},
         {"user@corp.io": 1, "redacted@private.invalid": 2},

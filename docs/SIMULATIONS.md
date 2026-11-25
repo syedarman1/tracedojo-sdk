@@ -19,6 +19,7 @@ const stripe = loadSimulation('stripe');
 export const tools = stripe.tools;           // SimulatedTool map for runWorkflow / the CLI
 const workflow = stripe.workflow();          // workflow/1 with the spec's initial state
 const agent = stripe.createAgent('fixed');   // scripted reference agent ('fixed' or 'broken')
+const defs = stripe.toolDefinitions();      // [{ name, description, parameters }] for a model's tool API
 ```
 
 `loadSimulation(spec)` also accepts your own spec object; it is validated the same way.

@@ -118,3 +118,32 @@ test('an agent that never re-reads still gets every later scenario tested', asyn
   const injection = batch.runs.find((r) => r.scenario.id === 'prompt-injection')!;
   assert.ok(injection.fault.triggered, 'prompt injection still runs');
 });
+
+test('toolDefinitions gives models plain JSON Schema, with no simulation-only types', () => {
+  for (const id of simulationIds) {
+    const sim = loadSimulation(id);
+    const defs = sim.toolDefinitions();
+    assert.deepEqual(defs.map((d) => d.name).sort(), Object.keys(sim.spec.tools).sort());
+    for (const def of defs) {
+      assert.ok(def.description.length > 0, `${id}.${def.name}`);
+      assert.equal(def.parameters.type, 'object');
+      assert.doesNotMatch(JSON.stringify(def.parameters), /"type":"any"/, `${id}.${def.name}`);
+    }
+  }
+  const refund = loadSimulation('stripe')
+    .toolDefinitions()
+    .find((d) => d.name === 'stripe_create_refund')!;
+  assert.deepEqual((refund.parameters.properties as Record<string, unknown>).metadata, {});
+});
+
+test('reports keep reserved example addresses from the simulations, and still redact real ones', async () => {
+  const { sanitizeJson } = await import('../packages/sdk/src/privacy.js');
+  assert.equal(
+    sanitizeJson('jordan@example.com, a@mail.example.org, b@ci.test, c@b.invalid'),
+    'jordan@example.com, a@mail.example.org, b@ci.test, c@b.invalid',
+  );
+  assert.equal(
+    sanitizeJson('jane@company.com and q@example.company.com'),
+    'redacted@private.invalid and redacted@private.invalid',
+  );
+});

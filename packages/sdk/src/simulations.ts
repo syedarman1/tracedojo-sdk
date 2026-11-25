@@ -691,6 +691,33 @@ export interface Simulation {
   workflow(): Record<string, Json>;
   /** The scripted reference agent: 'fixed' passes every scenario; 'broken' fails agent.bugScenario. */
   createAgent(variant?: 'fixed' | 'broken'): WorkflowAgent;
+  /**
+   * Tool definitions to hand a model: name, description and a plain JSON Schema
+   * for the arguments, in the shape OpenAI, Anthropic and most local servers accept.
+   */
+  toolDefinitions(): ModelToolDefinition[];
+}
+
+/** A simulated tool described for a model's tool-calling API. */
+export interface ModelToolDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, Json>;
+}
+
+/** simulation/1 input schemas are JSON Schema except `any`, which is the empty schema. */
+function jsonSchema(schema: AnyInput): Record<string, Json> {
+  if (schema.type === 'any') return {};
+  const out = { ...schema } as Record<string, Json>;
+  if (schema.type === 'array') out.items = jsonSchema(schema.items as AnyInput);
+  if (schema.type === 'object')
+    out.properties = Object.fromEntries(
+      Object.entries(schema.properties as Record<string, AnyInput>).map(([key, value]) => [
+        key,
+        jsonSchema(value),
+      ]),
+    );
+  return out;
 }
 
 const directory = new URL('../simulations/', import.meta.url);
@@ -716,5 +743,11 @@ export function loadSimulation(idOrSpec: string | unknown): Simulation {
     workflow: () =>
       structuredClone({ ...spec.workflow, initialState: spec.state }) as Record<string, Json>,
     createAgent: (variant = 'fixed') => scriptAgent(spec, variant),
+    toolDefinitions: () =>
+      Object.entries(spec.tools).map(([name, tool]) => ({
+        name,
+        description: tool.description,
+        parameters: jsonSchema(tool.input),
+      })),
   };
 }

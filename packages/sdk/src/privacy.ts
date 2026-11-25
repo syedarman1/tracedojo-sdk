@@ -22,7 +22,7 @@ function scrub(value: string): string {
       '$1="[REDACTED]"',
     )
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, (address) =>
-      /@(?:[a-z0-9.-]+\.)?(?:example|invalid)$/i.test(address)
+      /@(?:[a-z0-9.-]+\.)?(?:example(?:\.(?:com|net|org))?|invalid|test|localhost)$/i.test(address)
         ? address
         : 'redacted@private.invalid',
     );
