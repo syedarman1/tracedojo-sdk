@@ -44,6 +44,7 @@
     },
     {
       "id": "notify-revoked",
+      "skipChecks": ["lookup-bound", "reserve-range", "notify-once", "order", "no-refund", "one-booking", "length-pointer", "not-array", "other", "missing", "escaped", "done", "honest-id", "notified", "notice-text", "honest-status", "other-text"],
       "title": "Notify permission revoked",
       "fault": { "type": "permission_revoked", "tool": "notify" },
       "checks": [

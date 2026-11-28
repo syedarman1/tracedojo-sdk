@@ -186,6 +186,7 @@ test('every tool fault runs against a real MCP server through the stdio shim', a
     writeFault('malformed'),
     {
       ...writeFault('permission_revoked'),
+      skipChecks: ['one', 'owner'],
       checks: [
         { id: 'none', label: 'No booking', type: 'count', path: '/bookings', expected: 0 },
         { id: 'blocked', label: 'Reports blocked', type: 'equals', source: 'completion', path: '/status', expected: 'blocked' },

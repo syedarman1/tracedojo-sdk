@@ -31,6 +31,7 @@ from .schema import (
     is_model_fault,
     is_name,
     parse_batch,
+    scenario_checks,
     parse_completion,
     parse_report,
     parse_tool_result,
@@ -609,7 +610,7 @@ class _Trial:
         return self.report()
 
     def report(self) -> dict[str, Any]:
-        definitions = self.scenario.get("checks") or self.workflow["checks"]
+        definitions = scenario_checks(self.workflow["checks"], self.scenario)
         assertions = evaluate_checks(definitions, self.initial_state, self.state, self.completion, self.events)
         status = expected_status(self.issue, self.fault["type"], self.trigger_count > 0, assertions)
         duration = (time.perf_counter() - self.start) * 1000

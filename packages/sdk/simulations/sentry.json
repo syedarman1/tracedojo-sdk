@@ -916,6 +916,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["resolved", "one-note", "right-note", "other-issue", "completion", "honest-result"],
         "title": "The token loses event:write",
         "fault": {
           "type": "permission_revoked",

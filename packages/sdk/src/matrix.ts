@@ -9,6 +9,7 @@ import {
   stableJson,
   workflowSchema,
   type Workflow,
+  scenarioChecks,
 } from './schema.js';
 
 const name = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/);
@@ -168,7 +169,7 @@ export function generateFaultMatrix(
       if (
         new Set(
           matches.map((scenario) =>
-            stableJson(scenario.checks ?? workflow.checks),
+            stableJson(scenarioChecks(workflow.checks, scenario)),
           ),
         ).size > 1
       )
@@ -181,6 +182,9 @@ export function generateFaultMatrix(
         fault,
         ...(matches[0]?.checks
           ? { checks: structuredClone(matches[0].checks) }
+          : {}),
+        ...(matches[0]?.skipChecks
+          ? { skipChecks: [...matches[0].skipChecks] }
           : {}),
       });
     }

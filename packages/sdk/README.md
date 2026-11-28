@@ -18,7 +18,7 @@ actually changed in your application's state, not what the agent claimed.
 No API key, no account. Node.js 22.23.1 or later.
 
 ```sh
-npx tracedojo@0.1.13 demo
+npx tracedojo@0.2.0 demo
 ```
 
 ```text
@@ -79,7 +79,7 @@ inconclusive, not as passes.
 Then:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.9
+npm install --save-dev --save-exact @tracedojo/sdk@0.3.0
 npx tracedojo init            # starter adapter + workflow
 npx tracedojo test --trials 3
 ```
@@ -96,7 +96,7 @@ Join two simulations with `+`. The template faults both write calls, checks the
 refund count, the Slack post count and the reaction, and runs as is:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.9
+npm install --save-dev --save-exact @tracedojo/sdk@0.3.0
 npx tracedojo init --template stripe+slack --out dojo
 npx tracedojo test --out .tracedojo/first-report.json
 ```

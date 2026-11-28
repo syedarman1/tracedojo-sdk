@@ -256,7 +256,12 @@ function combinedSimulationFiles(ids: string[]): Record<string, string> {
     const workflow = sim.workflow() as {
       initialState: Record<string, Json>;
       checks: { id: string; type: string }[];
-      scenarios: { id: string; checks?: unknown; fault: { tool: string } }[];
+      scenarios: {
+        id: string;
+        checks?: unknown;
+        skipChecks?: unknown;
+        fault: { tool: string };
+      }[];
     };
     const main = workflow.scenarios.find((s) => s.id === "lost-confirmation")!
       .fault.tool;
@@ -281,7 +286,9 @@ function combinedSimulationFiles(ids: string[]): Record<string, string> {
       ),
       // Scenarios with their own checks assume a single-service workflow.
       scenarios: prefix(
-        workflow.scenarios.filter((s) => !s.checks && s.fault.tool === main),
+        workflow.scenarios.filter(
+          (s) => !s.checks && !s.skipChecks && s.fault.tool === main,
+        ),
       ),
     };
   });
@@ -483,6 +490,10 @@ export async function worldFiles(id: string): Promise<Record<string, string>> {
         id: "permission-revoked",
         title: "Write permission is revoked",
         fault: { type: "permission_revoked", tool: world.tool },
+        // The write never happens, so only the unrelated-record check still applies.
+        skipChecks: checks
+          .map((check) => check.id)
+          .filter((id) => id !== "unrelated"),
         checks: [
           {
             id: "unchanged",

@@ -776,6 +776,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["one-reply", "right-reply", "solved", "other-ticket", "completion", "honest-result"],
         "title": "The agent loses ticket write access",
         "fault": {
           "type": "permission_revoked",

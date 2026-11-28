@@ -408,8 +408,35 @@ def _limits(value: object) -> dict[str, int]:
     }
 
 
+def scenario_checks(checks: list[dict[str, Any]], scenario: dict[str, Any]) -> list[dict[str, Any]]:
+    """The checks a scenario runs: top-level checks minus skipChecks, with the
+    scenario's own checks replacing any with the same id and adding the rest."""
+    skip = set(scenario.get("skipChecks", []))
+    own = scenario.get("checks", [])
+    by_id = {check["id"]: check for check in own}
+    merged = [by_id.get(check["id"], check) for check in checks if check["id"] not in skip]
+    seen = {check["id"] for check in merged}
+    return merged + [check for check in own if check["id"] not in seen]
+
+
+def scenario_check_issue(checks: list[dict[str, Any]], scenario: dict[str, Any]) -> str | None:
+    ids = {check["id"] for check in checks}
+    own = {check["id"] for check in scenario.get("checks", [])}
+    for check_id in scenario.get("skipChecks", []):
+        if check_id not in ids:
+            return f"Scenario {scenario['id']} skips {check_id}, which is not a top-level check."
+        if check_id in own:
+            return (
+                f"Scenario {scenario['id']} both skips and defines {check_id}. "
+                "Define it without skipping to replace it."
+            )
+    if not scenario_checks(checks, scenario):
+        return f"Scenario {scenario['id']} skips every check. Keep or add at least one."
+    return None
+
+
 def _scenario(value: object) -> dict[str, Any]:
-    data = _strict(value, ("id", "title", "fault"), ("checks",))
+    data = _strict(value, ("id", "title", "fault"), ("checks", "skipChecks"))
     scenario: dict[str, Any] = {
         "id": _name(data["id"]),
         "title": _text(data["title"]),
@@ -417,6 +444,11 @@ def _scenario(value: object) -> dict[str, Any]:
     }
     if "checks" in data:
         scenario["checks"] = parse_checks(data["checks"])
+    if "skipChecks" in data:
+        skip = _array(data["skipChecks"], 1, 50, _name)
+        if len(set(skip)) != len(skip):
+            _fail("Skipped check IDs must be unique.")
+        scenario["skipChecks"] = skip
     return scenario
 
 
@@ -448,6 +480,10 @@ def parse_workflow(value: object) -> dict[str, Any]:
         s["id"] == "baseline" or s["fault"]["type"] == "none" for s in workflow["scenarios"]
     ):
         _fail("Scenario IDs must be unique and cannot use the reserved baseline.")
+    for scenario in workflow["scenarios"]:
+        issue = scenario_check_issue(workflow["checks"], scenario)
+        if issue:
+            _fail(issue)
     return workflow
 
 

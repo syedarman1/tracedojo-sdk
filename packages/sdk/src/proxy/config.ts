@@ -7,6 +7,7 @@ import {
   checkSchema,
   isModelFault,
   workflowFaultSchema,
+  scenarioCheckIssue,
 } from '../schema.js';
 
 const name = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/);
@@ -17,6 +18,14 @@ const env = z
   .optional();
 const cwd = z.string().min(1).max(4000).optional();
 const httpUrl = z.url({ protocol: /^https?$/ });
+const skipChecks = z
+  .array(name)
+  .min(1)
+  .max(50)
+  .refine(
+    (items) => new Set(items).size === items.length,
+    'Skipped check IDs must be unique.',
+  );
 const checks = z
   .array(checkSchema)
   .min(1)
@@ -71,6 +80,7 @@ export const proxyConfigSchema = z
           title: text,
           fault: workflowFaultSchema,
           checks: checks.optional(),
+          skipChecks: skipChecks.optional(),
         }),
       )
       .min(1)
@@ -103,6 +113,10 @@ export const proxyConfigSchema = z
         message:
           'Scenario IDs must be unique and cannot use the reserved baseline.',
       });
+    for (const scenario of config.scenarios) {
+      const issue = scenarioCheckIssue(config.checks, scenario);
+      if (issue) ctx.addIssue({ code: 'custom', message: issue });
+    }
     for (const { fault } of config.scenarios) {
       if (fault.type === 'none' || isModelFault(fault)) continue;
       const kind = config.tools?.[fault.tool];
