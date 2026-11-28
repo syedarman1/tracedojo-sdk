@@ -28,7 +28,7 @@ from tracedojo import dumps, loads, parse_batch, run_workflow_sync, stable_json
 from tracedojo.compare import compare_workflow_batches, comparison_summary
 from tracedojo.privacy import sanitize_batch, sanitize_json
 from tracedojo.reports import parse_workflow_reports
-from tracedojo.schema import SchemaError, parse_workflow
+from tracedojo.schema import SchemaError, parse_workflow, scenario_checks
 from tracedojo.summary import workflow_summary
 
 HERE = Path(__file__).parent / "parity"
@@ -330,6 +330,35 @@ def test_stable_json_fingerprints_and_formatting_match() -> None:
         assert tracedojo._json.dumps(value, 2) == result["stringify"], value
 
 
+def skip_check_variants(base: dict[str, Any]) -> list[Any]:
+    top = [check["id"] for check in base["checks"]]
+    fault = {"type": "unavailable", "tool": "reserve_slot"}
+    own = {"id": "extra", "label": "Extra", "type": "unchanged", "path": ""}
+
+    def with_scenario(**fields: Any) -> dict[str, Any]:
+        return {**base, "scenarios": [{"id": "s", "title": "S", "fault": fault, **fields}]}
+
+    return [
+        with_scenario(skipChecks=top[:1]),
+        with_scenario(skipChecks=top[:1], checks=[own]),
+        with_scenario(skipChecks=top, checks=[own]),
+        with_scenario(checks=[{**own, "id": top[0]}]),
+        with_scenario(skipChecks=top),
+        with_scenario(skipChecks=["missing"]),
+        with_scenario(skipChecks=top[:1], checks=[{**own, "id": top[0]}]),
+        with_scenario(skipChecks=[]),
+        with_scenario(skipChecks=[top[0], top[0]]),
+        with_scenario(skipChecks=["-bad"]),
+    ]
+
+
+def test_scenario_checks_add_to_top_level_checks() -> None:
+    checks = [{"id": "a", "v": 1}, {"id": "b", "v": 1}, {"id": "c", "v": 1}]
+    merged = scenario_checks(checks, {"checks": [{"id": "b", "v": 2}, {"id": "d", "v": 1}], "skipChecks": ["c"]})
+    assert merged == [{"id": "a", "v": 1}, {"id": "b", "v": 2}, {"id": "d", "v": 1}]
+    assert scenario_checks(checks, {}) == checks
+
+
 def test_workflow_parsing_matches_zod() -> None:
     base = suite("booking")
     variants: list[Any] = [
@@ -385,6 +414,7 @@ def test_workflow_parsing_matches_zod() -> None:
         {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings", "excludes": ["x"] * 21}]},
         {**base, "checks": [{"id": "t", "label": "Text", "type": "text", "path": "/bookings", "includes": ["a"], "expected": 1}]},
         "not a workflow",
+        *skip_check_variants(base),
     ]
     expected = js({"op": "parse-workflow", "values": variants})
     for value, verdict in zip(variants, expected):

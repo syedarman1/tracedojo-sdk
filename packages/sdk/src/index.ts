@@ -23,6 +23,7 @@ import {
   type WorkflowCompletion,
   type WorkflowEvent,
   type WorkflowReport,
+  scenarioChecks,
 } from './schema.js';
 export * from './schema.js';
 import { TrialClock, type WorkflowClock } from './clock.js';
@@ -461,7 +462,7 @@ async function trial(
     signal?.removeEventListener('abort', abort);
     if (rejectAbort) signal?.removeEventListener('abort', rejectAbort);
   }
-  const definitions = scenario.checks ?? workflow.checks;
+  const definitions = scenarioChecks(workflow.checks, scenario);
   const assertions = evaluateChecks(
     definitions,
     initialState,

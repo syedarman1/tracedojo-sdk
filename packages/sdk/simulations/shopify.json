@@ -638,6 +638,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["available", "one-adjustment", "right-adjustment", "other-item", "completion", "honest-result"],
         "title": "The app loses write_inventory",
         "fault": {
           "type": "permission_revoked",

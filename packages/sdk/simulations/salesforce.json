@@ -1180,6 +1180,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["no-duplicates", "jordan", "riley", "alex", "completion", "honest-result"],
         "title": "The integration user loses Create on Contact",
         "fault": {
           "type": "permission_revoked",

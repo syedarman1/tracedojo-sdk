@@ -26,7 +26,8 @@ failure and fix under the same scenario.
 ## Connect your application
 
 1. Replace `workflow.json` with your task, synthetic starting state, outcome checks,
-   and tool failures. Scenario-specific checks can describe correct refusal.
+   and tool failures. Scenario checks add to the top-level checks; use `skipChecks`
+   to drop the ones a fault makes wrong, as the permission-revoked scenario does.
 2. Replace `tools` with in-memory simulations of your tool behavior. Handlers may
    return promises and receive cancellation through the third argument's signal.
    Successful writes commit their state draft; errors discard it. Do not connect

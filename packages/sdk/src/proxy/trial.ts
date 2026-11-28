@@ -14,6 +14,7 @@ import {
   type WorkflowEvent,
   type WorkflowFault,
   type WorkflowReport,
+  scenarioChecks,
 } from '../schema.js';
 import type { ProxyConfig } from './config.js';
 import {
@@ -411,7 +412,7 @@ export class ProxyTrial {
         detail: `Run stopped: ${issue}. Partial evidence preserved.`,
       });
     const scenario = this.options.scenario;
-    const definitions = scenario.checks ?? config.checks;
+    const definitions = scenarioChecks(config.checks, scenario);
     const assertions = evaluateChecks(
       definitions,
       this.options.initialState,

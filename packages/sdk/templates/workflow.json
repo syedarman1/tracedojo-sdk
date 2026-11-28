@@ -76,6 +76,7 @@
     },
     {
       "id": "permission-revoked",
+      "skipChecks": ["one-booking", "right-customer", "right-slot", "completion", "honest-id"],
       "title": "Booking permission is revoked",
       "fault": { "type": "permission_revoked", "tool": "reserve_slot" },
       "checks": [

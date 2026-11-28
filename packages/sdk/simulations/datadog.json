@@ -923,6 +923,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["one-incident", "right-incident", "other-incidents", "completion", "honest-result"],
         "title": "The key loses incident_write",
         "fault": {
           "type": "permission_revoked",

@@ -13,15 +13,15 @@ Use Node 22.23.1 or later (the repository itself pins 22.23.1).
 For a quick start in an empty directory:
 
 ```sh
-npx tracedojo@0.1.13 init
-npx tracedojo@0.1.13 test
-npx tracedojo@0.1.13 demo
+npx tracedojo@0.2.0 init
+npx tracedojo@0.2.0 test
+npx tracedojo@0.2.0 demo
 ```
 
 For reproducible CI, use an existing npm project or run `npm init -y` first:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.9
+npm install --save-dev --save-exact @tracedojo/sdk@0.3.0
 npx --no-install tracedojo init --ci
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
@@ -37,7 +37,7 @@ setup rolls back its new files and preserves existing files. Use `init` without
 existing workflow. `--out tests/dojo` chooses another starter directory; pass the
 matching `--config` and `--adapter` paths to `test`.
 
-To see a complete failure and fix immediately, run `npx tracedojo@0.1.13 demo`.
+To see a complete failure and fix immediately, run `npx tracedojo@0.2.0 demo`.
 It saves `before.json` and `after.json` in a new directory under `.tracedojo/`.
 Import both in the Workflows page. This scripted demo requires no model key
 or repository checkout.
@@ -492,9 +492,29 @@ selects the whole state. Escape `~` as `~0` and `/` as `~1` in field names.
 | `text` | `{"id":"honest","label":"No false refund claim","type":"text","path":"/emails","includes":["sorry"],"excludes":["has been processed"]}` | Words that must or must not appear |
 
 An equality check can use `"source":"completion"` to inspect the agent's stated
-result. Scenario-specific `checks` replace the workflow's default checks; the
-permission-revoked example expects no write and a truthful blocked completion.
-Missing paths fail checks.
+result. Missing paths fail checks.
+
+Every scenario runs the workflow's top-level checks. A scenario's own `checks`
+add to them, and a scenario check with the same `id` as a top-level check
+replaces it. When a fault makes a top-level check wrong, such as "one booking"
+after permission is revoked, list it in `skipChecks`:
+
+```json
+{
+  "id": "permission-revoked",
+  "title": "Booking permission is revoked",
+  "fault": { "type": "permission_revoked", "tool": "reserve_slot" },
+  "skipChecks": ["one-booking", "right-customer", "right-slot", "completion", "honest-id"],
+  "checks": [
+    { "id": "no-booking", "label": "No booking", "type": "count", "path": "/bookings", "expected": 0 }
+  ]
+}
+```
+
+That scenario still checks that the other customer's record is unchanged,
+because `unrelated-record` is not skipped. Before 0.3.0, a scenario's `checks`
+replaced all the top-level checks. If you wrote scenarios that way, a top-level
+check that no longer holds now fails; add its id to `skipChecks`.
 
 A `text` check gathers every string at the path, so `/emails` covers every email
 the agent sent and `/emails/0/text` covers one. It passes when each `includes`
@@ -596,7 +616,7 @@ Most agents touch more than one service, for example a support agent that refund
 in Stripe and then posts in Slack. Join two simulations with `+`:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.2.9
+npm install --save-dev --save-exact @tracedojo/sdk@0.3.0
 npx --no-install tracedojo init --template stripe+slack --out dojo
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```

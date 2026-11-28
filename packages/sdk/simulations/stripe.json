@@ -894,6 +894,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["one-refund", "right-refund", "charge-balance", "other-charge", "other-payment", "completion", "honest-result"],
         "title": "The API key loses refund permission",
         "fault": {
           "type": "permission_revoked",

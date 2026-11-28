@@ -993,6 +993,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["one-event", "right-event", "standup", "review", "completion", "honest-result"],
         "title": "The token loses calendar.events",
         "fault": {
           "type": "permission_revoked",

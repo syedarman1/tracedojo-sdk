@@ -221,6 +221,56 @@ const checks = z
     (items) => new Set(items.map((c) => c.id)).size === items.length,
     'Check IDs must be unique.',
   );
+const skipChecks = z
+  .array(name)
+  .min(1)
+  .max(50)
+  .refine(
+    (items) => new Set(items).size === items.length,
+    'Skipped check IDs must be unique.',
+  );
+
+/**
+ * The checks a scenario runs. A scenario's own checks add to the top-level
+ * checks, and one with the same id replaces that check. `skipChecks` drops
+ * top-level checks the scenario does not want.
+ */
+export function scenarioChecks<C extends { id: string }>(
+  checks: readonly C[],
+  scenario: { checks?: readonly C[]; skipChecks?: readonly string[] },
+): C[] {
+  const skip = new Set(scenario.skipChecks ?? []);
+  const own = scenario.checks ?? [];
+  const byId = new Map(own.map((check) => [check.id, check]));
+  const merged = checks
+    .filter((check) => !skip.has(check.id))
+    .map((check) => byId.get(check.id) ?? check);
+  const seen = new Set(merged.map((check) => check.id));
+  return [...merged, ...own.filter((check) => !seen.has(check.id))];
+}
+
+/** Why a scenario's check settings are invalid, or null when they are fine. */
+export function scenarioCheckIssue(
+  checks: readonly { id: string }[],
+  scenario: {
+    id: string;
+    checks?: readonly { id: string }[];
+    skipChecks?: readonly string[];
+  },
+): string | null {
+  const ids = new Set(checks.map((check) => check.id));
+  const own = new Set((scenario.checks ?? []).map((check) => check.id));
+  for (const id of scenario.skipChecks ?? []) {
+    if (!ids.has(id))
+      return `Scenario ${scenario.id} skips ${id}, which is not a top-level check.`;
+    if (own.has(id))
+      return `Scenario ${scenario.id} both skips and defines ${id}. Define it without skipping to replace it.`;
+  }
+  if (!scenarioChecks(checks, scenario).length)
+    return `Scenario ${scenario.id} skips every check. Keep or add at least one.`;
+  return null;
+}
+
 export const workflowSchema = z
   .strictObject({
     schemaVersion: z.literal('workflow/1'),
@@ -237,6 +287,7 @@ export const workflowSchema = z
           title: text,
           fault: workflowFaultSchema,
           checks: checks.optional(),
+          skipChecks: skipChecks.optional(),
         }),
       )
       .min(1)
@@ -254,7 +305,13 @@ export const workflowSchema = z
       new Set(w.scenarios.map((s) => s.id)).size === w.scenarios.length &&
       w.scenarios.every((s) => s.id !== 'baseline' && s.fault.type !== 'none'),
     'Scenario IDs must be unique and cannot use the reserved baseline.',
-  );
+  )
+  .superRefine((w, ctx) => {
+    for (const scenario of w.scenarios) {
+      const issue = scenarioCheckIssue(w.checks, scenario);
+      if (issue) ctx.addIssue({ code: 'custom', message: issue });
+    }
+  });
 export type Workflow = z.infer<typeof workflowSchema>;
 export function parseWorkflow(input: unknown): Workflow {
   boundedJson(input, 500000);

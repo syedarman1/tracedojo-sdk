@@ -774,6 +774,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["one-contact", "right-contact", "jordan", "riley", "completion", "honest-result"],
         "title": "The app loses crm.objects.contacts.write",
         "fault": {
           "type": "permission_revoked",

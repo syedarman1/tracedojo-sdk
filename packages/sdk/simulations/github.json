@@ -746,6 +746,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["merged", "merge-sha", "one-comment", "right-comment", "other-pr", "completion", "honest-result"],
         "title": "The token loses write access",
         "fault": {
           "type": "permission_revoked",

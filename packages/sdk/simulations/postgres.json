@@ -873,6 +873,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["one-order", "right-order", "existing-order", "customers", "completion", "honest-result"],
         "title": "The role loses INSERT privilege",
         "fault": {
           "type": "permission_revoked",

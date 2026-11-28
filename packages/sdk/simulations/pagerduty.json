@@ -747,6 +747,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["one-page", "resolved", "right-title", "right-service", "other-incidents", "completion", "honest-result"],
         "title": "The integration key is disabled",
         "fault": {
           "type": "permission_revoked",

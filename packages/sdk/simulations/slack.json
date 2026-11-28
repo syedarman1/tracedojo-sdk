@@ -829,6 +829,7 @@
       },
       {
         "id": "permission-revoked",
+        "skipChecks": ["one-post", "right-post", "reaction", "other-channel", "completion", "honest-result"],
         "title": "The bot loses chat:write",
         "fault": {
           "type": "permission_revoked",
