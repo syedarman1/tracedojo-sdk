@@ -180,7 +180,7 @@ async function main() {
       );
       console.log(`Matrix: ${destination}`);
       console.log(
-        "Review expectations before running test-matrix. Original scenarios are preserved in your source config; only exact-match check overrides carry into generated cases. Prompt injections need a reviewed payload; stale reads are opt-in and require history.",
+        "Review expectations before running test-matrix. Original scenarios are preserved in your source config. A generated case copies check adjustments from the hand-written scenario with the same fault, and copies skipChecks from the same fault kind on another tool of that service. Prompt injections need a reviewed payload; stale reads are opt-in and require history.",
       );
     } else {
       const destination = resolve(

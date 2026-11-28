@@ -291,7 +291,7 @@ export const workflowSchema = z
         }),
       )
       .min(1)
-      .max(10),
+      .max(20),
     limits: z
       .strictObject({
         maxToolCalls: z.number().int().min(1).max(100).default(20),
@@ -577,7 +577,7 @@ export const executionSchema = z.strictObject({
   scenarioIds: z
     .array(name)
     .min(1)
-    .max(10)
+    .max(20)
     .refine(
       (ids) => new Set(ids).size === ids.length && !ids.includes('baseline'),
       'Invalid planned scenario IDs.',

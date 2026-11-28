@@ -854,11 +854,20 @@
       },
       {
         "id": "duplicate-delivery",
-        "title": "The reaction request is delivered twice",
+        "title": "The post is delivered twice",
         "fault": {
           "type": "duplicate_delivery",
-          "tool": "slack_reactions_add"
-        }
+          "tool": "slack_chat_postMessage"
+        },
+        "checks": [
+          {
+            "id": "one-post",
+            "label": "Duplicate delivery inserts a second copy (4 messages)",
+            "type": "count",
+            "path": "/messages",
+            "expected": 4
+          }
+        ]
       },
       {
         "id": "stale-read",
@@ -944,7 +953,20 @@
             "timestamp": "1731649000.000100",
             "name": "white_check_mark"
           },
-          "attempts": 3
+          "attempts": 3,
+          "beforeRetry": {
+            "call": "slack_conversations_history",
+            "args": {
+              "channel": "C0OPS"
+            },
+            "find": {
+              "path": "/messages",
+              "where": {
+                "ts": "1731649000.000100",
+                "/reactions/0/name": "white_check_mark"
+              }
+            }
+          }
         },
         {
           "call": "slack_conversations_history",

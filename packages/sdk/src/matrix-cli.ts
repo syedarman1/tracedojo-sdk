@@ -13,7 +13,11 @@ import {
   type MatrixOptions,
 } from './matrix.js';
 import { sanitizeWorkflowBatch } from './privacy.js';
-import { workflowExitCode, commitShaSchema } from './schema.js';
+import {
+  workflowExitCode,
+  commitShaSchema,
+  unreachedFault,
+} from './schema.js';
 
 async function loadAdapter(path: string): Promise<WorkflowAdapter> {
   try {
@@ -130,13 +134,25 @@ export async function testFaultMatrix(
           .get(row.report)!
           .writeFile(JSON.stringify(batch, null, 2) + '\n');
         saved.add(row.report);
-        row.exitCode = workflowExitCode(batch);
-        row.status =
-          row.exitCode === 0
-            ? 'passed'
-            : row.exitCode === 1
-              ? 'failed'
-              : 'incomplete';
+        // A tool the agent never calls cannot pass or fail its faults. Record
+        // that separately so the rest of a correct run is not incomplete.
+        const notExercised =
+          batch.baseline.status === 'passed' &&
+          !batch.skippedReason &&
+          batch.runs.length > 0 &&
+          batch.runs.every((run) => unreachedFault(run));
+        if (notExercised) {
+          row.exitCode = 0;
+          row.status = 'not_exercised';
+        } else {
+          row.exitCode = workflowExitCode(batch);
+          row.status =
+            row.exitCode === 0
+              ? 'passed'
+              : row.exitCode === 1
+                ? 'failed'
+                : 'incomplete';
+        }
         if (
           batch.baseline.status !== 'passed' ||
           batch.runs.some(
@@ -159,11 +175,22 @@ export async function testFaultMatrix(
         break;
       }
     }
+    const missed = rows
+      .filter((row) => row.status === 'not_exercised')
+      .map((row) => row.tool);
+    const exercised = rows.some(
+      (row) => row.status === 'passed' || row.status === 'failed',
+    );
     const exitCode = rows.some((row) => row.exitCode === 3)
       ? 3
       : rows.some((row) => row.exitCode === 1)
         ? 1
-        : 0;
+        : missed.length && !exercised
+          ? 3
+          : 0;
+    const uncovered = missed.length
+      ? `${missed.join(', ')} ${missed.length === 1 ? 'was' : 'were'} not called, so those faults were not exercised.`
+      : undefined;
     const result = {
       schemaVersion: 'workflow-matrix-result/1',
       status:
@@ -174,12 +201,14 @@ export async function testFaultMatrix(
       suites: rows,
       ...(reason
         ? { reason }
-        : exitCode === 3
-          ? {
-              reason:
-                'Some fault scenarios were not reached. Incomplete coverage is not a passing result.',
-            }
-          : {}),
+        : uncovered
+          ? { reason: uncovered }
+          : exitCode === 3
+            ? {
+                reason:
+                  'Some fault scenarios were not reached. Incomplete coverage is not a passing result.',
+              }
+            : {}),
     };
     await files
       .get('index.json')!

@@ -31,7 +31,13 @@ test("init --template stripe+slack runs with tracedojo test and catches both dou
     );
     const report = JSON.parse(await readFile(join(dir, "fixed.json"), "utf8"));
     // Every scenario faults a write the reference agent makes, so all trigger.
-    assert.ok(report.runs.length >= 8 && report.runs.length <= 10);
+    assert.equal(report.runs.length, 12);
+    const matrix = run("matrix", "--out", "matrix.json");
+    assert.equal(matrix.status, 0, matrix.stdout + matrix.stderr);
+    const matrixRun = run("test-matrix", "matrix.json", "--out", "matrix-reports");
+    assert.equal(matrixRun.status, 0, matrixRun.stdout + matrixRun.stderr);
+    assert.match(matrixRun.stdout, /stripe_list_refunds: not_exercised/);
+    assert.match(matrixRun.stdout, /was not called/);
     for (const r of report.runs) assert.ok(r.fault.triggered, r.scenario.id);
 
     const adapter = join(dir, "dojo/adapter.mjs");

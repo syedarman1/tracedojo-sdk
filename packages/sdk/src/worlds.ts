@@ -238,6 +238,61 @@ Local adapters are trusted code, not sandboxed. Add .tracedojo/ to .gitignore; r
 const lowerFirst = (text: string) =>
   text.charAt(0).toLowerCase() + text.slice(1);
 
+type SimCheck = {
+  id: string;
+  type: string;
+  source?: string;
+  path?: string;
+  label?: string;
+  expected?: Json;
+};
+
+type SimScenario = {
+  id: string;
+  title: string;
+  fault: { type: string; tool: string };
+  checks?: SimCheck[];
+  skipChecks?: string[];
+};
+
+/** Main-write scenarios for a combined workflow, with check ids prefixed.
+ * A whole-state unchanged check assumes this service is the only writer, so it
+ * is dropped. The blocked-status check applies only to the service whose
+ * result the agent returns. */
+function carriedScenarios(
+  service: string,
+  scenarios: SimScenario[],
+  checkIds: Set<string>,
+  reportsStatus: boolean,
+) {
+  return scenarios.map((scenario) => {
+    const skip = (scenario.skipChecks ?? [])
+      .map((id) => `${service}-${id}`)
+      .filter((id) => checkIds.has(id));
+    if (
+      reportsStatus &&
+      (scenario.skipChecks ?? []).includes("completion") &&
+      checkIds.has("completed")
+    )
+      skip.push("completed");
+    const checks = (scenario.checks ?? []).flatMap((check) => {
+      if (check.type === "unchanged" && check.path === "") return [];
+      if (check.source === "completion")
+        return reportsStatus ? [{ ...check }] : [];
+      const id = `${service}-${check.id}`;
+      // Only replacements of checks this combined workflow still runs.
+      return checkIds.has(id) ? [{ ...check, id }] : [];
+    });
+    return {
+      id: `${service}-${scenario.id}`,
+      title: scenario.title,
+      fault: scenario.fault,
+      ...(checks.length ? { checks } : {}),
+      ...(skip.length ? { skipChecks: skip } : {}),
+    };
+  });
+}
+
 // Exact-state checks whose expected value does not depend on what the agent wrote.
 const portableChecks: Record<string, string[]> = { slack: ["reaction"] };
 
@@ -252,16 +307,11 @@ function combinedSimulationFiles(ids: string[]): Record<string, string> {
       `Combine two different simulations, like stripe+slack. Choose from: ${simulationIds.join(", ")}.`,
     );
   const sims = ids.map((id) => ({ id, sim: loadSimulation(id) }));
-  const parts = sims.map(({ id, sim }) => {
+  const parts = sims.map(({ id, sim }, index) => {
     const workflow = sim.workflow() as {
       initialState: Record<string, Json>;
       checks: { id: string; type: string }[];
-      scenarios: {
-        id: string;
-        checks?: unknown;
-        skipChecks?: unknown;
-        fault: { tool: string };
-      }[];
+      scenarios: SimScenario[];
     };
     const main = workflow.scenarios.find((s) => s.id === "lost-confirmation")!
       .fault.tool;
@@ -271,6 +321,8 @@ function combinedSimulationFiles(ids: string[]): Record<string, string> {
       id,
       sim,
       main,
+      // The combined agent returns the second service's completion.
+      reportsStatus: index === sims.length - 1,
       state: workflow.initialState,
       tools: Object.keys(sim.tools),
       // Counts, untouched records, and the listed state checks hold for any
@@ -284,12 +336,7 @@ function combinedSimulationFiles(ids: string[]): Record<string, string> {
             portableChecks[id]?.includes(c.id),
         ),
       ),
-      // Scenarios with their own checks assume a single-service workflow.
-      scenarios: prefix(
-        workflow.scenarios.filter(
-          (s) => !s.checks && !s.skipChecks && s.fault.tool === main,
-        ),
-      ),
+      scenarios: workflow.scenarios.filter((s) => s.fault.tool === main),
     };
   });
   const [a, b] = parts as [(typeof parts)[0], (typeof parts)[0]];
@@ -320,8 +367,12 @@ function combinedSimulationFiles(ids: string[]): Record<string, string> {
         expected: "completed",
       },
     ],
-    scenarios: [...a.scenarios, ...b.scenarios],
+    scenarios: [] as ReturnType<typeof carriedScenarios>,
   };
+  const checkIds = new Set(workflow.checks.map((check) => check.id));
+  workflow.scenarios = parts.flatMap((part) =>
+    carriedScenarios(part.id, part.scenarios, checkIds, part.reportsStatus),
+  );
   const adapter = `// SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Syed Arman
 
@@ -360,7 +411,7 @@ Run from your repository with the SDK installed:
 npx --no-install tracedojo test --config PATH/workflow.json --adapter PATH/adapter.mjs --out .tracedojo/first-report.json
 \`\`\`
 
-Replace PATH with this directory. The scenarios fault each service's main write: \`${a.main}\` and \`${b.main}\`. They cover a lost confirmation, a request timeout, temporary unavailability, a truncated response${a.scenarios.length + b.scenarios.length > 8 ? ", and duplicate delivery where the service has it" : ""}.
+Replace PATH with this directory. The scenarios fault each service's main write: \`${a.main}\` and \`${b.main}\`. They cover a lost confirmation, a request timeout, temporary unavailability, a truncated response, and that write's revoked-permission and duplicate-delivery cases when the service defines them.
 
 Checks come from each service: record counts and records that must stay untouched, plus a completion check. Add checks for the exact records your agent should write.
 

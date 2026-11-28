@@ -473,7 +473,7 @@ def parse_workflow(value: object) -> dict[str, Any]:
     if "clock" in data:
         workflow["clock"] = parse_clock(data["clock"])
     workflow["checks"] = parse_checks(data["checks"])
-    workflow["scenarios"] = _array(data["scenarios"], 1, 10, _scenario)
+    workflow["scenarios"] = _array(data["scenarios"], 1, 20, _scenario)
     workflow["limits"] = _limits(data.get("limits", {}))
     ids = [s["id"] for s in workflow["scenarios"]]
     if len(set(ids)) != len(ids) or any(
@@ -707,7 +707,7 @@ def _execution(value: object) -> dict[str, Any]:
             _fail()
         execution["commitSha"] = data["commitSha"]
     execution["trialsPerScenario"] = _int(data["trialsPerScenario"], 1, 20)
-    ids = _array(data["scenarioIds"], 1, 10, _name)
+    ids = _array(data["scenarioIds"], 1, 20, _name)
     if len(set(ids)) != len(ids) or "baseline" in ids:
         _fail("Invalid planned scenario IDs.")
     execution["scenarioIds"] = ids

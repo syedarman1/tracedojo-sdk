@@ -13,15 +13,15 @@ Use Node 22.23.1 or later (the repository itself pins 22.23.1).
 For a quick start in an empty directory:
 
 ```sh
-npx tracedojo@0.2.0 init
-npx tracedojo@0.2.0 test
-npx tracedojo@0.2.0 demo
+npx tracedojo@0.2.1 init
+npx tracedojo@0.2.1 test
+npx tracedojo@0.2.1 demo
 ```
 
 For reproducible CI, use an existing npm project or run `npm init -y` first:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.3.0
+npm install --save-dev --save-exact @tracedojo/sdk@0.3.1
 npx --no-install tracedojo init --ci
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
@@ -37,7 +37,7 @@ setup rolls back its new files and preserves existing files. Use `init` without
 existing workflow. `--out tests/dojo` chooses another starter directory; pass the
 matching `--config` and `--adapter` paths to `test`.
 
-To see a complete failure and fix immediately, run `npx tracedojo@0.2.0 demo`.
+To see a complete failure and fix immediately, run `npx tracedojo@0.2.1 demo`.
 It saves `before.json` and `after.json` in a new directory under `.tracedojo/`.
 Import both in the Workflows page. This scripted demo requires no model key
 or repository checkout.
@@ -346,7 +346,7 @@ From a TraceDojo source checkout, use `npm run workflow --` instead.
 timeout_after,duplicate_delivery` selects fault types. An inapplicable tool/fault
 pair produces no case; selecting no applicable cases is an error. Generation
 sorts tools and fault types deterministically so declaration order does not change
-suite identity. Each tool gets its own workflow, avoiding the ten-scenario limit
+suite identity. Each tool gets its own workflow, avoiding the 20-scenario limit
 of an individual suite. Matrices support up to 50 tools within a 5 MB input bound.
 
 Generation reads `adapter.tools` without invoking `createAgent` or handlers. Module
@@ -354,11 +354,13 @@ imports still execute trusted local JavaScript. It makes no model requests itsel
 Running the matrix executes a fresh control per suite plus 1–20 trials per case,
 so estimate paid-model usage from the printed scenario count before starting.
 
-Task, state, limits, clock, and common checks carry over unchanged. Scenario check
-overrides carry over only when tool, fault type, occurrence, and repeat match
-exactly. Conflicting matching overrides are rejected. In particular, decide what
-correct blocked behavior means for permission failures; the generator does not
-invent relaxed expectations just to obtain a passing result.
+Task, state, limits, clock, and common checks carry over unchanged. A generated
+case copies `checks` and `skipChecks` from the hand-written scenario with the
+same tool, fault type, occurrence, and repeat. When that tool has no such
+scenario, it copies `skipChecks` and completion checks from another tool of the
+same service with the same fault kind; state expectations stay on the tool they
+were written for. Conflicting adjustments are rejected. The generator does not
+invent new expectations for a fault kind the workflow never describes.
 
 Stale reads are opt-in with `--faults stale_read`; generated calls target occurrence
 2 and require a differing earlier successful result for identical inputs. Add
@@ -373,12 +375,14 @@ matrix definition and coverage index themselves are not run reports. Compare
 matching per-tool reports with the existing `compare` command in CI. Aggregate
 matrix comparison and a matrix-specific dashboard are not yet implemented.
 
-Exit 0 requires all suites to pass; 1 means completed evidence contains failures;
-3 means some evidence is missing, interrupted, or inconclusive. Invalid input/setup
-exits 2. An unreached tool does not prevent testing the next tool, but remains
-incomplete. A failed control, cancellation, timeout, or execution-contract issue
-stops remaining suites. The index distinguishes completed reports, errors without
-reports, and suites not run. Completed reports survive later failures.
+Exit 0 requires every exercised suite to pass; 1 means completed evidence
+contains failures; 3 means some evidence is missing, interrupted, or
+inconclusive. Invalid input/setup exits 2. A tool the agent never calls is
+reported as `not_exercised` and does not fail the run when another suite was
+exercised. If no tool was called, the run stays incomplete. A failed control,
+cancellation, timeout, or execution-contract issue stops remaining suites. The
+index distinguishes completed reports, tools that were not called, errors
+without reports, and suites not run. Completed reports survive later failures.
 
 ### Adapter contract
 
@@ -616,7 +620,7 @@ Most agents touch more than one service, for example a support agent that refund
 in Stripe and then posts in Slack. Join two simulations with `+`:
 
 ```sh
-npm install --save-dev --save-exact @tracedojo/sdk@0.3.0
+npm install --save-dev --save-exact @tracedojo/sdk@0.3.1
 npx --no-install tracedojo init --template stripe+slack --out dojo
 npx --no-install tracedojo test --out .tracedojo/first-report.json
 ```
