@@ -312,8 +312,9 @@ test('matrix execution records incomplete coverage and never treats absent suite
     assert.equal(result.exitCode, 3);
     assert.deepEqual(
       result.suites.map((suite) => suite.status),
-      ['incomplete', 'incomplete'],
+      ['not_exercised', 'not_exercised'],
     );
+    assert.match(result.reason ?? '', /not called/);
     assert.equal(result.completed, 2);
     assert.equal((await readdir(join(dir, 'reports'))).length, 3);
     const brokenControl = structuredClone(matrix);
@@ -356,6 +357,141 @@ test('matrix execution records incomplete coverage and never treats absent suite
       /do not match/,
     );
     await assert.rejects(stat(join(dir, 'mismatch')));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('matrix copies skipChecks from the same fault kind and keeps state overrides on the matching tool', () => {
+  const workflow = {
+    schemaVersion: 'workflow/1',
+    id: 'demo',
+    title: 'Demo',
+    task: 'Post, then react',
+    initialState: { messages: [], other: 1 },
+    checks: [
+      {
+        id: 'one-post',
+        label: 'One post',
+        type: 'count',
+        path: '/messages',
+        expected: 1,
+      },
+      { id: 'other', label: 'Other unchanged', type: 'unchanged', path: '/other' },
+      {
+        id: 'completion',
+        label: 'Agent reports completion',
+        type: 'equals',
+        source: 'completion',
+        path: '/status',
+        expected: 'completed',
+      },
+    ],
+    scenarios: [
+      {
+        id: 'permission-post',
+        title: 'Post permission revoked',
+        fault: { type: 'permission_revoked', tool: 'slack_chat_postMessage' },
+        skipChecks: ['one-post', 'completion'],
+        checks: [
+          { id: 'unchanged', label: 'No writes', type: 'unchanged', path: '' },
+          {
+            id: 'blocked',
+            label: 'Agent reports the blocker',
+            type: 'equals',
+            source: 'completion',
+            path: '/status',
+            expected: 'blocked',
+          },
+        ],
+      },
+      {
+        id: 'duplicate-post',
+        title: 'Post delivered twice',
+        fault: { type: 'duplicate_delivery', tool: 'slack_chat_postMessage' },
+        checks: [
+          {
+            id: 'one-post',
+            label: 'Two copies',
+            type: 'count',
+            path: '/messages',
+            expected: 2,
+          },
+        ],
+      },
+      {
+        id: 'duplicate-react',
+        title: 'Reaction delivered twice',
+        fault: { type: 'duplicate_delivery', tool: 'slack_reactions_add' },
+      },
+    ],
+  };
+  const matrix = generateFaultMatrix(workflow, [
+    { name: 'slack_chat_postMessage', kind: 'write' },
+    { name: 'slack_reactions_add', kind: 'write' },
+    { name: 'stripe_create_refund', kind: 'write' },
+  ]);
+  const scenario = (tool: string, type: string) =>
+    matrix.suites
+      .find((suite) => suite.tool === tool)!
+      .workflow.scenarios.find((item) => item.fault.type === type)!;
+  const postPerm = scenario('slack_chat_postMessage', 'permission_revoked');
+  assert.deepEqual(postPerm.skipChecks, ['one-post', 'completion']);
+  assert.deepEqual(
+    postPerm.checks?.map((check) => check.id),
+    ['unchanged', 'blocked'],
+  );
+  const reactPerm = scenario('slack_reactions_add', 'permission_revoked');
+  assert.deepEqual(reactPerm.skipChecks, ['one-post', 'completion']);
+  assert.deepEqual(
+    reactPerm.checks?.map((check) => check.id),
+    ['blocked'],
+  );
+  assert.equal(
+    scenario('slack_chat_postMessage', 'duplicate_delivery').checks?.[0]?.expected,
+    2,
+  );
+  const reactDup = scenario('slack_reactions_add', 'duplicate_delivery');
+  assert.equal(reactDup.checks, undefined);
+  assert.equal(reactDup.skipChecks, undefined);
+  assert.equal(
+    scenario('stripe_create_refund', 'permission_revoked').skipChecks,
+    undefined,
+  );
+});
+
+test('a tool the agent never calls is not exercised and does not fail the matrix', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'dojo-matrix-unreached-'));
+  try {
+    const matrix = generateFaultMatrix(
+      {
+        schemaVersion: 'workflow/1',
+        id: 'example',
+        title: 'Example',
+        task: 'Read one tool',
+        initialState: {},
+        checks: [{ id: 'same', label: 'Same', type: 'unchanged', path: '' }],
+      },
+      [
+        { name: 'called', kind: 'read' },
+        { name: 'ignored', kind: 'read' },
+      ],
+    );
+    const adapter = join(dir, 'adapter.mjs');
+    await writeFile(
+      adapter,
+      `export const tools = { called: { kind:'read', execute: () => ({ok:true,data:null}) }, ignored: { kind:'read', execute: () => ({ok:true,data:null}) } }; export function createAgent() { return { id:'reader', version:'1', async run({call}) { await call('called', {}); return {status:'completed', message:'Read'}; } }; }`,
+    );
+    const result = await testFaultMatrix(matrix, adapter, join(dir, 'reports'), 1);
+    assert.deepEqual(
+      result.suites.map((suite) => [suite.tool, suite.status]),
+      [
+        ['called', 'passed'],
+        ['ignored', 'not_exercised'],
+      ],
+    );
+    assert.equal(result.exitCode, 0);
+    assert.match(result.reason ?? '', /ignored was not called/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

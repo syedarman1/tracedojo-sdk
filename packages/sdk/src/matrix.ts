@@ -9,7 +9,6 @@ import {
   stableJson,
   workflowSchema,
   type Workflow,
-  scenarioChecks,
 } from './schema.js';
 
 const name = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/);
@@ -143,7 +142,9 @@ export function generateFaultMatrix(
   )
     throw new Error('Select unique fault types.');
   // A task/state/check definition may omit scenarios entirely. Existing scenarios
-  // are still validated, and their exact-match check overrides are preserved.
+  // are still validated. An exact fault match keeps that scenario's check
+  // adjustments. The same fault kind on another tool of the same service lends
+  // its skipChecks and completion checks; state expectations stay on their tool.
   const workflow = parseMatrixDefinition(input);
   const originals = Object.hasOwn(input as object, 'scenarios')
     ? workflow.scenarios
@@ -163,16 +164,33 @@ export function generateFaultMatrix(
         occurrence: type === 'stale_read' ? 2 : 1,
         repeat: 1,
       };
-      const matches = originals.filter(
+      const exact = originals.filter(
         (scenario) => stableJson(scenario.fault) === stableJson(fault),
       );
-      if (
-        new Set(
-          matches.map((scenario) =>
-            stableJson(scenarioChecks(workflow.checks, scenario)),
-          ),
-        ).size > 1
-      )
+      const service = tool.name.split('_')[0]!;
+      const matches = exact.length
+        ? exact
+        : originals.filter(
+            (scenario) =>
+              scenario.fault.type === type &&
+              'tool' in scenario.fault &&
+              scenario.fault.tool.split('_')[0] === service &&
+              Boolean(scenario.skipChecks?.length || scenario.checks?.length),
+          );
+      const applied = matches.map((scenario) => {
+        const checks = exact.length
+          ? scenario.checks
+          : scenario.checks?.filter(
+              (check) => 'source' in check && check.source === 'completion',
+            );
+        return {
+          ...(checks?.length ? { checks: structuredClone(checks) } : {}),
+          ...(scenario.skipChecks?.length
+            ? { skipChecks: [...scenario.skipChecks] }
+            : {}),
+        };
+      });
+      if (new Set(applied.map((item) => stableJson(item))).size > 1)
         throw new Error(
           'Matching scenarios have conflicting checks. Keep one set of expectations before generating a matrix.',
         );
@@ -180,12 +198,7 @@ export function generateFaultMatrix(
         id: `matrix-${type}`,
         title: `${tool.name}: ${type.replaceAll('_', ' ')}`,
         fault,
-        ...(matches[0]?.checks
-          ? { checks: structuredClone(matches[0].checks) }
-          : {}),
-        ...(matches[0]?.skipChecks
-          ? { skipChecks: [...matches[0].skipChecks] }
-          : {}),
+        ...applied[0],
       });
     }
     if (!scenarios.length) continue;
